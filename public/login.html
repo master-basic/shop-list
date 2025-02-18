@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Login</title>
+    <style>
+        body {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+            background-color: #f4f4f4;
+        }
+        .login-container {
+            background-color: white;
+            padding: 20px;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+            border-radius: 5px;
+        }
+        .login-container h1 {
+            text-align: center;
+            color: #333;
+        }
+        .login-container input {
+            width: 100%;
+            padding: 10px;
+            margin: 10px 0;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+        }
+        .login-container button {
+            width: 100%;
+            padding: 10px;
+            background-color: #007bff;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            transition: background-color 0.3s;
+        }
+        .login-container button:hover {
+            background-color: #0056b3;
+            transform: scale(1.05); /* Slightly enlarge button on hover */
+        }
+        .admin-button {
+    background-color: #4CAF50; /* Green background */
+    border: none; /* Remove border */
+    color: white; /* White text */
+    padding: 15px 32px; /* Padding */
+    text-align: center; /* Center-align text */
+    text-decoration: none; /* Remove underline from text */
+    display: inline-block; /* Inline-block display */
+    font-size: 16px; /* Increase font size */
+    margin: 4px 2px; /* Margin */
+    cursor: pointer; /* Pointer cursor on hover */
+    border-radius: 12px; /* Rounded corners */
+    transition: background-color 0.3s ease, transform 0.3s ease; /* Smooth transitions */
+}
+
+/* Add hover effect */
+.admin-button:hover {
+    background-color: #45a049; /* Darker green background on hover */
+    transform: scale(1.05); /* Slightly enlarge button on hover */
+}
+
+/* Add focus effect */
+.admin-button:focus {
+    outline: none; /* Remove default outline */
+    box-shadow: 0 0 5px 2px rgba(0, 128, 0, 0.5); /* Custom focus shadow */
+}
+
+/* Add active effect */
+.admin-button:active {
+    background-color: #3e8e41; /* Even darker green background on click */
+    transform: scale(0.95); /* Slightly shrink button on click */
+}
+        .admin-button:hover {
+            background-color: #218838;
+        }
+    </style>
+</head>
+<body>
+    <div class="login-container">
+        <h1>Login</h1>
+        <input type="text" id="username" placeholder="Username">
+        <input type="password" id="password" placeholder="Password">
+        <button onclick="login()">Login</button>
+        <button class="admin-button" onclick="adminLogin()">Admin Login</button> <!-- Admin login button -->
+    </div>
+    <script src="login.js"></script>
+</body>
+</html>

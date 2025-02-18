@@ -1,0 +1,108 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f4f4f4;
+            margin: 0;
+            padding: 0;
+        }
+        h1 {
+            text-align: center;
+            color: #333;
+        }
+        .input-container {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            margin: 20px 0;
+        }
+        .input-container input, .input-container button {
+            margin-right: 10px;
+            padding: 10px;
+            font-size: 16px;
+        }
+        .input-container button {
+            background-color: #007bff;
+            color: white;
+            border: none;
+            cursor: pointer;
+            transition: background-color 0.3s;
+        }
+        .input-container button:hover {
+            background-color: #0056b3;
+        }
+        table {
+            width: 80%;
+            margin: 0 auto;
+            border-collapse: collapse;
+            background-color: white;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+        }
+        th, td {
+            padding: 12px;
+            text-align: left;
+            border-bottom: 1px solid #ddd;
+        }
+        th {
+            background-color: #f8f8f8;
+            font-weight: bold;
+        }
+        .delete-button, .edit-button {
+            background-color: red;
+            color: white;
+            border: none;
+            padding: 5px 10px;
+            cursor: pointer;
+            transition: background-color 0.3s;
+        }
+        .delete-button:hover, .edit-button:hover {
+            background-color: darkred;
+        }
+        .edit-button {
+            background-color: blue;
+        }
+        .edit-button:hover {
+            background-color: darkblue;
+        }
+        .logout-button {
+            display: block;
+            margin: 20px auto;
+            padding: 10px 20px;
+            background-color: #dc3545;
+            color: white;
+            border: none;
+            cursor: pointer;
+            transition: background-color 0.3s;
+        }
+        .logout-button:hover {
+            background-color: #c82333;
+        }
+    </style>
+</head>
+<body>
+    <h1>Admin Page</h1>
+    <div class="input-container">
+        <input type="text" id="new-username" placeholder="New Username">
+        <input type="password" id="new-password" placeholder="New Password">
+        <label for="new-isAdmin">Admin</label>
+        <input type="checkbox" id="new-isAdmin">
+        <button onclick="createUser()">Create User</button>
+    </div>
+    <table>
+        <thead>
+            <tr>
+                <th>Username</th>
+                <th>Actions</th>
+            </tr>
+        </thead>
+        <tbody id="user-list"></tbody>
+    </table>
+    <button class="logout-button" onclick="logout()">Logout</button> <!-- Logout button -->
+    <script src="admin.js"></script>
+</body>
+</html>

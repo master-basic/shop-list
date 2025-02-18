@@ -1,0 +1,68 @@
+// ...existing code to fetch items and generate table rows...
+async function loadReport() {
+    const response = await fetch('/api/items?includeArchived=true');
+    const items = await response.json();
+    console.log("Fetched items:", items); // Debug: log fetched items
+
+    const tableBody = document.getElementById('report-list');
+    tableBody.innerHTML = '';
+    let totalAmount = 0;
+    items.forEach(item => {
+        const tr = document.createElement('tr');
+        const itemDate = new Date(item.date).toLocaleString('en-GB', { hour12: false });
+        const boughtDate = item.bought_date ? new Date(item.bought_date).toLocaleString('en-GB', { hour12: false }) : '';
+        const totalPrice = item.price * item.quantity;
+        totalAmount += totalPrice;
+        tr.innerHTML = `
+            <td>${item.name}</td>
+            <td>${itemDate}</td>
+            <td>${boughtDate}</td>
+            <td>${item.price}</td>
+            <td>${item.quantity}</td>
+            <td>${totalPrice.toFixed(2)}</td>
+            <td>${item.bought_by || ''}</td>
+            <td><!-- ...actions if any ... --></td>
+        `;
+        tableBody.appendChild(tr);
+    });
+    // Update total amount display: changed element id to match report.html
+    document.getElementById('report-total').textContent = "Total: $" + totalAmount.toFixed(2);
+
+    // Compute spending per buyer from items having a buyer
+    const spendingByBuyer = {};
+    items.forEach(item => {
+        if(item.bought_by) {
+            spendingByBuyer[item.bought_by] = (spendingByBuyer[item.bought_by] || 0) + (item.price * item.quantity);
+        }
+    });
+    console.log("Spending by buyer:", spendingByBuyer); // Debug: log summary data
+
+    // Render summary rows in the table's tfoot
+    let summaryHtml = '';
+    for (const buyer in spendingByBuyer) {
+        summaryHtml += `<tr><td colspan="7">${buyer}</td><td>Total: AZN ${spendingByBuyer[buyer].toFixed(2)}</td></tr>`;
+    }
+    const tfoot = document.getElementById('report-summary');
+    if (tfoot) {
+        tfoot.innerHTML = summaryHtml;
+        console.log("Updated summary rows:", summaryHtml); // Debug: confirm update
+    } else {
+        console.error("Element with id 'report-summary' not found.");
+    }
+
+    // New: populate buyer summary in a separate container
+    const buyerSummaryElem = document.getElementById('buyer-summary');
+    if (buyerSummaryElem) {
+        let content = '<h3>Buyers Summary</h3><ul>';
+        for (const buyer in spendingByBuyer) {
+            content += `<li>${buyer}: AZN ${spendingByBuyer[buyer].toFixed(2)}</li>`;
+        }
+        content += '</ul>';
+        buyerSummaryElem.innerHTML = content;
+    }
+}
+
+// Initial load of report after DOM is loaded
+document.addEventListener('DOMContentLoaded', loadReport);
+
+// ...existing code...
