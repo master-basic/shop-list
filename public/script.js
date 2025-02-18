@@ -355,7 +355,7 @@ async function showNotBoughtItems() {
             <td>${totalPrice.toFixed(2)}</td>
             <td>
                 <button class="button" onclick="markAsBought(${item.id})">Bought</button>
-                <button class="button" onclick="archiveItem(${item.id})">Archive</button>
+                <button class="button" onclick="archiveItem(${item.id})">Hide</button>
                 <button class="button" onclick="enableEditing(this.closest('tr'))">Edit</button>
             </td>
         `; // Set the inner HTML of the row

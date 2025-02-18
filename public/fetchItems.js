@@ -26,7 +26,7 @@ async function fetchItems() {
             <td>${item.created_by}</td>
             <td>
                 <button class="bought-button" onclick="markAsBought(${item.id})">Bought</button>
-                <button class="delete-button" onclick="archiveItem(${item.id})">Archive</button>
+                <button class="delete-button" onclick="archiveItem(${item.id})">Hide</button>
                 <button class="edit-button" onclick="enableEditing(this.closest('tr'))">Edit</button>
             </td>
         `; // Set the inner HTML of the row
