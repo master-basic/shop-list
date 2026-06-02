@@ -110,7 +110,7 @@ function handleAdminLogin() {
 }
 
 // Admin login button handler (for when there's no form)
-function adminLogin() {
+async function adminLogin() {
     const usernameInput = document.getElementById('admin-username');
     const passwordInput = document.getElementById('admin-password');
     
