@@ -1,143 +1,133 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8"> <!-- Set the character encoding to UTF-8 -->
-    <meta name="viewport" content="width=device-width, initial-scale=1.0"> <!-- Set the viewport for responsive design -->
-    <title>Shopping List</title> <!-- Set the title of the page -->
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Shopping List - ShopList</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="styles.css">
     <style>
-        body {
-            font-family: Arial, sans-serif; /* Set the font family for the body */
-            background-color: #f4f4f4;
-            margin: 0;
-            padding: 0;
+        /* Shopping List Page Specific Styles */
+        .shopping-list-page .header {
+            background: var(--primary-color);
         }
-        h1, h2 {
-            text-align: center;
-            color: #333;
-        }
-        table {
-            width: 80%;
-            margin: 0 auto;
-            border-collapse: collapse; /* Collapse table borders */
-            background-color: white;
-            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
-        }
-        th, td {
-            padding: 12px;
-            text-align: left;
-            border-bottom: 1px solid #ddd; /* Add padding, text alignment, and border to table cells */
-        }
-        th {
-            background-color: #f8f8f8;
-            font-weight: bold; /* Make table headers bold */
-        }
-        .bought {
-            text-decoration: line-through;
-            color: grey; /* Style for bought items */
-        }
-        .autocomplete {
-            position: relative;
-            display: inline-block; /* Style for autocomplete container */
-        }
-        #autocomplete-list {
-            position: absolute;
-            border: 1px solid #ddd;
-            z-index: 99;
-            top: 100%;
-            left: 0;
-            right: 0; /* Style for autocomplete list */
-        }
-        .autocomplete-items {
-            padding: 10px;
-            cursor: pointer;
-            background-color: #fff;
-            border-bottom: 1px solid #ddd; /* Style for autocomplete items */
-        }
-        .autocomplete-items:hover {
-            background-color: #e9e9e9; /* Hover style for autocomplete items */
-        }
-        .button {
-            background-color: #007bff;
+        .shopping-list-page .header h1 {
             color: white;
-            border: none;
-            padding: 10px 20px;
-            cursor: pointer;
-            transition: background-color 0.3s, transform 0.3s;
-            border-radius: 5px; /* Rounded corners */
-            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1); /* Subtle shadow */
         }
-        .button:hover {
-            background-color: #0056b3;
-            transform: scale(1.05); /* Slightly enlarge on hover */
+        .shopping-list-page .add-item-section {
+            margin-bottom: 24px;
         }
-        .button:active {
-            transform: scale(0.95); /* Slightly shrink on click */
-        }
-        .input-container {
-            display: flex;
-            justify-content: center;
-            align-items: center; /* Style for input container */
-            margin: 20px 0;
-        }
-        .input-container input, .input-container select, .input-container button {
-            margin-right: 10px; /* Adjust the spacing between input and button */
-            padding: 10px;
-            font-size: 16px;
-        }
-        .total {
-            text-align: right;
-            font-size: 18px;
-            font-weight: bold;
-            padding: 20px;
+        .shopping-list-page .table-container {
+            margin-bottom: 24px;
         }
     </style>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/moment.js/2.29.1/moment.min.js"></script> <!-- Include moment.js -->
 </head>
 <body>
-    <h1>Shopping List</h1> <!-- Main heading -->
-    <h2 id="month-name"></h2> <!-- Subheading for the month name -->
-    <div class="input-container">
-        <div class="autocomplete" style="width: 300px;">
-            <input type="text" id="item-name" placeholder="Add new item" oninput="autocomplete()"> <!-- Input field for adding new items with autocomplete -->
-            <div id="autocomplete-list"></div>
+    <div class="container">
+        <!-- Header -->
+        <header class="header">
+            <div class="header-left">
+                <h1>🛒 Shopping List</h1>
+                <h2 id="month-name"></h2>
+            </div>
+            <div class="header-right">
+                <button class="theme-toggle" onclick="toggleTheme()" title="Toggle Dark Mode">
+                    🌙
+                </button>
+            </div>
+        </header>
+
+        <!-- Add Item Section -->
+        <section class="add-item-section">
+            <h3>Add New Item</h3>
+            <div class="input-container">
+                <div class="input-group">
+                    <label for="item-name">Item Name</label>
+                    <div class="autocomplete" style="width: 100%;">
+                        <input type="text" id="item-name" placeholder="e.g., Milk" oninput="autocomplete()">
+                        <div id="autocomplete-list"></div>
+                    </div>
+                </div>
+                <div class="input-group">
+                    <label for="item-category">Category</label>
+                    <select id="item-category">
+                        <option value="">All Categories</option>
+                        <option value="Groceries">🥦 Groceries</option>
+                        <option value="Dairy">🥛 Dairy</option>
+                        <option value="Meat">🥩 Meat</option>
+                        <option value="Produce">🍎 Produce</option>
+                        <option value="Bakery">🥐 Bakery</option>
+                        <option value="Household">🏠 Household</option>
+                        <option value="Personal Care">🧴 Personal Care</option>
+                    </select>
+                </div>
+                <div class="input-group">
+                    <label for="item-price">Price</label>
+                    <input type="number" id="item-price" placeholder="0.00" step="0.01" min="0">
+                </div>
+                <div class="input-group">
+                    <label for="item-quantity">Quantity</label>
+                    <input type="number" id="item-quantity" placeholder="1" step="1" min="1" value="1">
+                </div>
+                <button class="button" onclick="addItem()">Add Item</button>
+            </div>
+        </section>
+
+        <!-- Filter Section -->
+        <section class="filter-section">
+            <div class="category-filter" id="category-filter">
+                <span class="category-chip active" data-category="">All Items</span>
+                <span class="category-chip" data-category="Groceries">🥦 Groceries</span>
+                <span class="category-chip" data-category="Dairy">🥛 Dairy</span>
+                <span class="category-chip" data-category="Meat">🥩 Meat</span>
+                <span class="category-chip" data-category="Produce">🍎 Produce</span>
+                <span class="category-chip" data-category="Bakery">🥐 Bakery</span>
+                <span class="category-chip" data-category="Household">🏠 Household</span>
+                <span class="category-chip" data-category="Personal Care">🧴 Personal Care</span>
+            </div>
+            <div class="filter-buttons">
+                <button class="button button-secondary" onclick="showBoughtItems()">Bought</button>
+                <button class="button button-secondary" onclick="showNotBoughtItems()">Not Bought</button>
+                <button class="button button-secondary" onclick="showArchivedItems()">Archived</button>
+            </div>
+        </section>
+
+        <!-- Shopping List Table -->
+        <div class="table-container">
+            <table id="shopping-table">
+                <thead>
+                    <tr>
+                        <th>Item</th>
+                        <th>Date</th>
+                        <th>Bought Date</th>
+                        <th>Category</th>
+                        <th>Price</th>
+                        <th>Quantity</th>
+                        <th>Total</th>
+                        <th>Bought By</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody id="shopping-list"></tbody>
+            </table>
         </div>
-        <input type="number" id="item-price" placeholder="Price" step="0.01">
-        <input type="number" id="item-quantity" placeholder="Quantity" step="1" min="1">
-        <button class="button" onclick="addItem()">Add</button> <!-- Button to add new items -->
+
+        <!-- Total Section -->
+        <div class="total-section">
+            <span>📊 Total Items: <strong id="total-items">0</strong></span>
+            <span>💰 Total Amount: <strong id="total-amount">AZN 0.00</strong></span>
+            <span>✅ Purchased: <strong id="purchased-count">0</strong></span>
+        </div>
     </div>
 
-    <table id="shopping-table">
-        <thead>
-            <tr>
-                <th>Name</th>
-                <th>Date Added</th>
-                <th>Bought Date</th>
-                <th>Price</th>
-                <th>Quantity</th>
-                <th>Total</th>
-                <th>Bought by</th>
-                <th>Added by</th>
-                <th>Actions</th> <!-- Table headers -->
-            </tr>
-        </thead>
-        <tbody id="shopping-list"></tbody> <!-- Table body for shopping list items -->
-    </table>
-    <div class="total" id="total-amount">Total: AZN 0.00</div>
+    <!-- Toast Container -->
+    <div class="toast-container" id="toast-container"></div>
 
-    <!-- Added container for the item list -->
-    <div id="itemList"></div>
-
-    <div class="input-container">
-        <button class="button" onclick="generateReport()">Generate Report</button>
-        <button class="button" onclick="showBoughtItems()">Show Bought Items</button>
-        <button class="button" onclick="showNotBoughtItems()">Show Not Bought Items</button>
-        <button class="button" onclick="logout()">Logout</button> <!-- Logout button -->
-    </div>
-
-    <script src="script.js"></script> <!-- Include the external JavaScript file -->
-    <script src="utils.js"></script> <!-- Include the external JavaScript file for utility functions -->
-    <script src="fetchItems.js"></script> <!-- Include the external JavaScript file for fetching items -->
-    <script src="editItems.js"></script> <!-- Include the external JavaScript file for editing items -->
-    <script src="autocomplete.js"></script> <!-- Include the external JavaScript file for autocomplete functionality -->
+    <script src="script.js"></script>
+    <script src="utils.js"></script>
+    <script src="fetchItems.js"></script>
+    <script src="editItems.js"></script>
+    <script src="autocomplete.js"></script>
+    <script src="darkMode.js"></script>
 </body>
 </html>

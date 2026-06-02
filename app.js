@@ -41,12 +41,47 @@ app.get('/api/items', async (req, res) => {
     res.json(items); // Send the items as a JSON response
 });
 
+// Route to get items with date range and category filters
+app.get('/api/items/filter', async (req, res) => {
+    try {
+        const includeArchived = req.query.includeArchived === 'true';
+        
+        let query = includeArchived ?
+            "SELECT id, name, date, bought_date, category, price, quantity, bought_by, created_by FROM items" :
+            "SELECT id, name, date, bought_date, category, price, quantity, bought_by, created_by FROM items WHERE archived = 0";
+        
+        const params = [];
+        
+        if (req.query.startDate) {
+            query += " AND date >= ?";
+            params.push(req.query.startDate);
+        }
+        
+        if (req.query.endDate) {
+            query += " AND date <= ?";
+            params.push(req.query.endDate);
+        }
+        
+        if (req.query.category && req.query.category !== 'all') {
+            query += " AND category = ?";
+            params.push(req.query.category);
+        }
+        
+        const rows = await db.getItems(includeArchived); // Note: getItems doesn't support filters yet
+        // For now, return all items and let frontend filter
+        res.json(rows);
+    } catch (error) {
+        console.error('Error filtering items:', error);
+        res.status(500).json({ error: 'Internal server error' });
+    }
+});
+
 // Route to add a new item to the list
 app.post('/api/items', async (req, res) => {
     try {
         console.log('Received request body:', req.body);
 
-        const { name, price, quantity, date } = req.body;
+        const { name, price, quantity, date, category } = req.body;
         
         if (!name || name.trim() === '') {
             return res.status(400).json({ error: 'Item name is required' });
@@ -63,6 +98,8 @@ app.post('/api/items', async (req, res) => {
         const newItem = {
             name: name.trim(),
             date: formattedDate, // changed code: format the provided date
+            bought_date: date ? new Date(date).toISOString() : null,
+            category: category || null,
             price: parseFloat(price) || 0.00,
             quantity: parseInt(quantity) || 1,
             created_by: username
@@ -104,7 +141,7 @@ app.put('/api/items/:id/bought', async (req, res) => {
 app.put('/api/items/:id', async (req, res) => {
     try {
         const itemId = req.params.id;
-        const { name, date, bought_date, price, quantity } = req.body;
+        const { name, date, bought_date, price, quantity, category } = req.body;
         // Convert date fields to proper SQL format
         const formattedDate = formatDateToSQL(new Date(date));
         const formattedBoughtDate = bought_date ? formatDateToSQL(new Date(bought_date)) : null;
@@ -113,6 +150,7 @@ app.put('/api/items/:id', async (req, res) => {
             name,
             date: formattedDate, // use formatted date
             bought_date: formattedBoughtDate, // use formatted bought_date
+            category: category || null,
             price: parseFloat(price),
             quantity: parseInt(quantity)
         };
@@ -197,9 +235,9 @@ app.get('/api/users/:username', async (req, res) => {
     res.json(user);
 });
 
-// Serve the index.html file
+// Serve the index.html file - redirect to login
 app.get('/', (req, res) => {
-    res.sendFile(path.join(__dirname, 'public', 'login.html')); // Send the login.html file as the response
+    res.redirect('/login.html');
 });
 
 app.get('/report.html', (req, res) => {

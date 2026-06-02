@@ -1,134 +1,213 @@
-// Function to set default date range to the current month
+// Report page functionality
+const config = require('../config');
+const utils = require('../utils');
+
+let currentUser = null;
+
+// Initialize the page
+async function init() {
+    await checkAuthentication();
+    setupEventListeners();
+    await generateReport();
+}
+
+// Check if user is authenticated
+async function checkAuthentication() {
+    try {
+        const response = await fetch('/api/current-user');
+        if (!response.ok) {
+            utils.showToast('Please login first', 'error');
+            window.location.href = '/login.html';
+            return;
+        }
+        currentUser = await response.json();
+    } catch (error) {
+        console.error('Auth check error:', error);
+        utils.showToast('Authentication failed', 'error');
+        window.location.href = '/login.html';
+    }
+}
+
+// Setup event listeners
+function setupEventListeners() {
+    // Date range filter
+    const startDateInput = document.getElementById('start-date');
+    const endDateInput = document.getElementById('end-date');
+    
+    if (startDateInput) {
+        startDateInput.addEventListener('change', generateReport);
+    }
+    if (endDateInput) {
+        endDateInput.addEventListener('change', generateReport);
+    }
+}
+
+// Set default date range to current month
 function setDefaultDateRange() {
     const startDateInput = document.getElementById('start-date');
     const endDateInput = document.getElementById('end-date');
-    const now = new Date();
-    const firstDay = new Date(now.getFullYear(), now.getMonth(), 1);
-    const lastDay = new Date(now.getFullYear(), now.getMonth() + 1, 0);
-    startDateInput.value = firstDay.toISOString().split('T')[0];
-    endDateInput.value = lastDay.toISOString().split('T')[0];
-}
-
-// Function to enable editing of a row
-function enableEditing(row) {
-    const cells = row.querySelectorAll('td');
-    for (let i = 1; i < cells.length - 1; i++) {
-        const cell = cells[i];
-        const value = cell.textContent;
-        cell.innerHTML = `<input type="text" value="${value}">`;
+    if (startDateInput && endDateInput) {
+        const now = new Date();
+        const firstDay = new Date(now.getFullYear(), now.getMonth(), 1);
+        const lastDay = new Date(now.getFullYear(), now.getMonth() + 1, 0);
+        startDateInput.value = firstDay.toISOString().split('T')[0];
+        endDateInput.value = lastDay.toISOString().split('T')[0];
     }
-    const actionsCell = cells[cells.length - 1];
-    actionsCell.innerHTML = `<button onclick="saveChanges(this)">Save</button>`;
 }
 
-// Function to save changes made to a row
-async function saveChanges(button) {
-    const row = button.closest('tr');
-    const cells = row.querySelectorAll('td');
-    const item = {
-        name: cells[0].textContent,
-        date: new Date(cells[1].querySelector('input').value).toISOString(),
-        bought_date: cells[2].querySelector('input').value ? new Date(cells[2].querySelector('input').value).toISOString() : null,
-        price: parseFloat(cells[3].querySelector('input').value),
-        quantity: parseInt(cells[4].querySelector('input').value),
-        total: parseFloat(cells[5].querySelector('input').value)
-    };
-
-    await fetch(`/api/items/${item.name}`, {
-        method: 'PUT',
-        headers: {
-            'Content-Type': 'application/json'
-        },
-        body: JSON.stringify(item)
-    });
-
-    generateReport();
-}
-
-// Function to generate a report based on the selected date range
+// Generate report based on date range and filters
 async function generateReport() {
-    const startDate = new Date(document.getElementById('start-date').value);
-    const endDate = new Date(document.getElementById('end-date').value);
-    endDate.setHours(23, 59, 59, 999); // Set the end date to the end of the day
+    const startDate = document.getElementById('start-date')?.value;
+    const endDate = document.getElementById('end-date')?.value;
+    
+    const params = new URLSearchParams({ includeArchived: 'true' });
+    if (startDate) params.append('startDate', startDate);
+    if (endDate) params.append('endDate', endDate);
+    
+    try {
+        const response = await fetch(`/api/items?${params}`);
+        if (!response.ok) throw new Error('Failed to fetch items');
+        
+        const items = await response.json();
+        renderReportTable(items);
+        calculateReportStats(items);
+    } catch (error) {
+        console.error('Error generating report:', error);
+        utils.showToast('Failed to generate report', 'error');
+    }
+}
 
-    const response = await fetch('/api/items?includeArchived=true'); // Fetch items from the server, including archived items
-    const items = await response.json(); // Parse the JSON response
-    const list = document.getElementById('report-list'); // Get the report list element
-    list.innerHTML = ''; // Clear the current list
-    let totalAmount = 0; // Initialize total amount
-
-    const filteredItems = items.filter(item => {
-        const itemDate = new Date(item.date);
-        return itemDate >= startDate && itemDate <= endDate;
-    });
-
-    const itemMap = new Map();
-
-    filteredItems.forEach(item => {
-        const key = `${item.name}-${item.price}`;
-        if (itemMap.has(key)) {
-            const existingItem = itemMap.get(key);
-            existingItem.quantity += item.quantity;
-            existingItem.totalPrice += item.price * item.quantity;
-        } else {
-            itemMap.set(key, {
-                ...item,
-                totalPrice: item.price * item.quantity
-            });
-        }
-    });
-
-    itemMap.forEach(item => {
-        const tr = document.createElement('tr'); // Create a new table row
-        const itemDate = new Date(item.date).toLocaleString('en-GB', { hour12: false }); // Format the item date to EU standard with 24-hour time format
-        const boughtDate = item.bought_date ? new Date(item.bought_date).toLocaleString('en-GB', { hour12: false }) : ''; // Format the bought date if available
-        totalAmount += item.totalPrice; // Add to the total amount
-        // Updated row to include a cell for "Bought By"
+// Render report table
+function renderReportTable(items) {
+    const tableBody = document.getElementById('report-list');
+    if (!tableBody) return;
+    
+    tableBody.innerHTML = '';
+    
+    if (items.length === 0) {
+        tableBody.innerHTML = '<tr><td colspan="10" class="no-data">No items found</td></tr>';
+        return;
+    }
+    
+    items.forEach(item => {
+        const tr = document.createElement('tr');
         tr.innerHTML = `
             <td>${item.name}</td>
-            <td>${itemDate}</td>
-            <td>${boughtDate}</td>
-            <td>${item.price}</td>
+            <td>${utils.formatDate(item.date)}</td>
+            <td>${item.bought_date ? utils.formatDate(item.bought_date) : '-'}</td>
+            <td>${item.category || '-'}</td>
+            <td>${utils.formatCurrency(item.price)}</td>
             <td>${item.quantity}</td>
-            <td>${item.totalPrice.toFixed(2)}</td>
-            <td>${item.bought_by || ''}</td>
-            <td><button onclick="enableEditing(this.closest('tr'))">Edit</button></td>
-        `; // Set the inner HTML of the row
-        list.appendChild(tr); // Append the row to the list
+            <td>${utils.formatCurrency(item.price * item.quantity)}</td>
+            <td>${item.bought_by || '-'}</td>
+            <td class="actions">
+                <button class="action-button bought-button" onclick="toggleBought(this)">Bought</button>
+                <button class="action-button delete-button" onclick="deleteItem('${item.id}')">Delete</button>
+            </td>
+        `;
+        tableBody.appendChild(tr);
     });
+}
 
-    // Display the total amount using the correct element id
-    document.getElementById('report-total').textContent = `Total: ${totalAmount.toFixed(2)} AZN`; // Display the total amount
-
-    // Compute spending per buyer from filtered items having a buyer
+// Calculate report statistics
+function calculateReportStats(items) {
+    let totalAmount = 0;
     const spendingByBuyer = {};
-    filteredItems.forEach(item => {
+    const itemsByCategory = {};
+    
+    items.forEach(item => {
+        const itemTotal = item.price * item.quantity;
+        totalAmount += itemTotal;
+        
         if (item.bought_by) {
-            spendingByBuyer[item.bought_by] = (spendingByBuyer[item.bought_by] || 0) + item.price * item.quantity;
+            spendingByBuyer[item.bought_by] = (spendingByBuyer[item.bought_by] || 0) + itemTotal;
+        }
+        
+        if (item.category) {
+            itemsByCategory[item.category] = (itemsByCategory[item.category] || 0) + itemTotal;
         }
     });
-    // Update buyer summary container if it exists
+    
+    // Update total amount display
+    const totalElement = document.getElementById('report-total');
+    if (totalElement) {
+        totalElement.textContent = `AZN ${totalAmount.toFixed(2)}`;
+    }
+    
+    // Update buyer summary
     const buyerSummaryContainer = document.getElementById('buyer-summary');
     if (buyerSummaryContainer) {
-        let buyerSummaryHTML = '<h3>Buyer Totals</h3><ul>';
-        for (const buyer in spendingByBuyer) {
-            buyerSummaryHTML += `<li>${buyer}: ${spendingByBuyer[buyer].toFixed(2)} AZN</li>`;
+        let buyerSummaryHTML = '<h2>Buyer Summary</h2><div class="buyer-items">';
+        for (const [buyer, amount] of Object.entries(spendingByBuyer)) {
+            buyerSummaryHTML += `
+                <div class="buyer-item">
+                    <div class="buyer-item-name">${buyer}</div>
+                    <div class="buyer-item-total">AZN ${amount.toFixed(2)}</div>
+                </div>
+            `;
         }
-        buyerSummaryHTML += '</ul>';
+        buyerSummaryHTML += '</div>';
         buyerSummaryContainer.innerHTML = buyerSummaryHTML;
+        
+        if (Object.keys(spendingByBuyer).length === 0) {
+            buyerSummaryContainer.innerHTML = '<p>No buyer data available</p>';
+        }
     }
 }
 
-// Function to log out the user
-async function logout() {
-    await fetch('/api/logout', {
-        method: 'POST'
-    });
-    window.location.href = 'login.html'; // Redirect to the login page
+// Toggle bought status
+async function toggleBought(button) {
+    const row = button.closest('tr');
+    const itemName = row.querySelector('.item-name').textContent;
+    const itemTotal = row.querySelector('.item-total').textContent;
+    
+    const itemData = {
+        id: row.dataset.id,
+        bought: !button.classList.contains('bought')
+    };
+    
+    try {
+        const response = await fetch('/api/item/bought', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify(itemData)
+        });
+        
+        if (response.ok) {
+            button.classList.toggle('bought');
+            button.textContent = button.classList.contains('bought') ? 'Bought' : 'Not Bought';
+            utils.showToast(itemName + ' marked as ' + (button.classList.contains('bought') ? 'bought' : 'not bought'), 'success');
+        }
+    } catch (error) {
+        console.error('Error toggling bought status:', error);
+        utils.showToast('Failed to update status', 'error');
+    }
 }
 
-// Set default date range when the page loads
-window.onload = setDefaultDateRange;
+// Delete item
+async function deleteItem(itemId) {
+    if (!confirm('Are you sure you want to delete this item?')) return;
+    
+    try {
+        const response = await fetch(`/api/item/${itemId}`, {
+            method: 'DELETE'
+        });
+        
+        if (response.ok) {
+            const row = document.querySelector(`tr[data-id="${itemId}"]`);
+            if (row) row.remove();
+            utils.showToast('Item deleted successfully', 'success');
+        }
+    } catch (error) {
+        console.error('Error deleting item:', error);
+        utils.showToast('Failed to delete item', 'error');
+    }
+}
 
-// Initial load of report after DOM is loaded
-document.addEventListener('DOMContentLoaded', generateReport);
+// Initialize on load
+document.addEventListener('DOMContentLoaded', () => {
+    init();
+    setDefaultDateRange();
+});

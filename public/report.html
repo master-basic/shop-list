@@ -3,95 +3,61 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Report</title>
-    <style>
-        body {
-            font-family: Arial, sans-serif;
-            background-color: #f4f4f4;
-            margin: 0;
-            padding: 0;
-        }
-        h1 {
-            text-align: center;
-            color: #333;
-        }
-        .input-container {
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            margin: 20px 0;
-        }
-        .input-container input, .input-container select, .input-container button {
-            margin-right: 10px;
-            padding: 10px;
-            font-size: 16px;
-        }
-        .input-container button {
-            background-color: #007bff;
-            color: white;
-            border: none;
-            cursor: pointer;
-            transition: background-color 0.3s;
-        }
-        .input-container button:hover {
-            background-color: #0056b3;
-        }
-        table {
-            width: 80%;
-            margin: 0 auto;
-            border-collapse: collapse;
-            background-color: white;
-            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
-        }
-        th, td {
-            padding: 12px;
-            text-align: left;
-            border-bottom: 1px solid #ddd;
-        }
-        th {
-            background-color: #f8f8f8;
-            font-weight: bold;
-        }
-        .total {
-            text-align: right;
-            font-size: 18px;
-            font-weight: bold;
-            padding: 20px;
-        }
-    </style>
+    <title>Report - Shop List</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="styles.css">
 </head>
 <body>
-    <h1>Report</h1>
-    <div class="input-container">
-        <input type="date" id="start-date" placeholder="Start Date">
-        <input type="date" id="end-date" placeholder="End Date">
-        <button onclick="generateReport()">Generate Report</button>
-    </div>
+    <div class="container">
+        <h1 class="page-header">Report</h1>
+        
+        <div class="filter-section">
+            <div class="filter-row">
+                <div class="filter-group">
+                    <label for="start-date">Start Date:</label>
+                    <input type="date" id="start-date">
+                </div>
+                <div class="filter-group">
+                    <label for="end-date">End Date:</label>
+                    <input type="date" id="end-date">
+                </div>
+                <button class="generate-btn" onclick="generateReport()">Generate Report</button>
+            </div>
+        </div>
 
-    <table id="report-table">
-        <thead>
-            <tr>
-                <th>Name</th>
-                <th>Date Added</th>
-                <th>Bought Date</th>
-                <th>Price</th>
-                <th>Quantity</th>
-                <th>Total</th>
-                <th>Bought By</th>
-                <th>Actions</th>
-            </tr>
-        </thead>
-        <tbody id="report-list"></tbody>
-    </table>
-    <div class="total" id="report-total">Total: $0.00</div>
-    <!-- Add buyer totals container -->
-    <div id="buyer-summary" style="margin: 20px auto; width: 80%; text-align: center;"></div>
-    <!-- Back button container -->
-    <div style="text-align: center; margin-top: 20px;">
-        <button style="background-color: #007bff; color: white; border: none; padding: 10px 20px; font-size: 16px; cursor: pointer; border-radius: 5px; transition: background-color 0.3s;" onclick="window.location.href='index2.html'">
-            Back
-        </button>
+        <table id="report-table">
+            <thead>
+                <tr>
+                    <th>Name</th>
+                    <th>Date Added</th>
+                    <th>Bought Date</th>
+                    <th>Category</th>
+                    <th>Price</th>
+                    <th>Quantity</th>
+                    <th>Total</th>
+                    <th>Bought By</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+            <tbody id="report-list"></tbody>
+        </table>
+        
+        <div class="total-section">
+            <div class="total-label">Total Amount:</div>
+            <div class="total-amount" id="report-total">AZN 0.00</div>
+        </div>
+
+        <div class="buyer-summary">
+            <h2>Buyer Summary</h2>
+            <div class="buyer-items" id="buyer-summary"></div>
+        </div>
+        
+        <div style="text-align: center;">
+            <a href="index2.html" class="back-btn">Back to Home</a>
+        </div>
     </div>
+    
+    <script src="darkMode.js"></script>
     <script src="report.js"></script>
 </body>
 </html>
