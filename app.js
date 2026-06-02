@@ -27,6 +27,25 @@ db.initializeDatabase();
 // Function to format date to SQL datetime format using moment.js
 function formatDateToSQL(datetime) {
     if (!datetime) return null;
+    
+    // Try to parse as YYYY-MM-DD format first (for text input)
+    if (typeof datetime === 'string' && datetime.match(/^\d{4}-\d{2}-\d{2}$/)) {
+        const [year, month, day] = datetime.split('-').map(Number);
+        const date = new Date(year, month - 1, day);
+        if (!isNaN(date.getTime())) {
+            return date.toLocaleString('en-US', { 
+                timeZone: 'UTC',
+                year: 'numeric', 
+                month: '2-digit', 
+                day: '2-digit',
+                hour: '2-digit', 
+                minute: '2-digit', 
+                second: '2-digit'
+            }).replace(/\//g, '-').replace(',', '').replace(':', ':');
+        }
+    }
+    
+    // Try to parse as ISO datetime format
     const parsed = moment(datetime);
     if (!parsed.isValid()) {
         throw new Error('Invalid date format');
@@ -92,13 +111,11 @@ app.post('/api/items', async (req, res) => {
             return res.status(401).json({ error: 'Not authenticated' });
         }
 
-        // Convert provided date to the proper SQL format if present
-        const formattedDate = date ? formatDateToSQL(new Date(date)) : formatDateToSQL(new Date());
-
+        // Use current time as the item creation date in SQL format
         const newItem = {
             name: name.trim(),
-            date: formattedDate, // changed code: format the provided date
-            bought_date: date ? new Date(date).toISOString() : null,
+            date: formatDateToSQL(new Date()),
+            bought_date: null, // Initialize as null (item not yet bought)
             category: category || null,
             price: parseFloat(price) || 0.00,
             quantity: parseInt(quantity) || 1,

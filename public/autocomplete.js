@@ -1,12 +1,16 @@
 // Function to provide autocomplete suggestions based on the user's input
 async function autocomplete() {
+    // Expose to global scope for browser use
+    if (typeof window !== 'undefined') {
+        window.autocomplete = autocomplete;
+    }
     const input = document.getElementById('item-name'); // Get the input field
     const val = input.value; // Get the input value
     if (!val) {
         document.getElementById('autocomplete-list').innerHTML = ''; // Clear the autocomplete list if input is empty
         return;
     }
-
+    
     const response = await fetch('/api/items'); // Fetch items from the server
     const items = await response.json(); // Parse the JSON response
     const matches = items.filter(item => item.name.toLowerCase().includes(val.toLowerCase())); // Filter items based on the input value
@@ -23,3 +27,4 @@ async function autocomplete() {
         list.appendChild(div); // Append the div to the list
     });
 }
+

@@ -287,12 +287,6 @@ function selectItem() {
     select.style.display = 'none';
 }
 
-// Function to format date to SQL datetime format using moment.js
-function formatDateToSQL(datetime) {
-    if (!datetime) return null;
-    return moment(datetime).format('YYYY-MM-DD HH:mm:ss');
-}
-
 // Function to add a new item to the list
 async function addItem() {
     try {
@@ -311,12 +305,14 @@ async function addItem() {
             return;
         }
 
+        const now = new Date();
         const itemData = {
             name: itemName,
             price: itemPrice,
             quantity: itemQuantity,
             category: itemCategory,
-            date: moment().format('YYYY-MM-DD HH:mm:ss')
+            date: now.toISOString().slice(0, 19).replace('T', ' '),
+            bought_date: null // Initialize as null for the database
         };
 
         const response = await fetch('/api/items', {
@@ -384,53 +380,6 @@ async function archiveItem(itemId) {
         fetchItems();
     } catch (error) {
         showToast(error.message, 'error');
-    }
-}
-
-// Function to provide autocomplete suggestions based on the user's input
-async function autocomplete() {
-    const input = document.getElementById('item-name');
-    const val = input.value;
-    const list = document.getElementById('autocomplete-list');
-    if (!val || !list) {
-        list.innerHTML = '';
-        return;
-    }
-
-    try {
-        const response = await fetch('/api/items');
-        if (!response.ok) {
-            showToast('Failed to fetch items', 'error');
-            return;
-        }
-        const items = await response.json();
-        const matches = items.filter(item => item.name.toLowerCase().includes(val.toLowerCase()));
-        const limitedMatches = matches.slice(0, 10);
-        
-        list.innerHTML = '';
-        if (limitedMatches.length === 0) {
-            const div = document.createElement('div');
-            div.textContent = 'No matches found';
-            div.className = 'autocomplete-items';
-            div.style.color = 'var(--text-secondary)';
-            div.style.textAlign = 'center';
-            list.appendChild(div);
-        } else {
-            limitedMatches.forEach(match => {
-                const div = document.createElement('div');
-                div.textContent = `${match.category || 'N/A'} - ${match.name}`;
-                div.classList.add('autocomplete-items');
-                div.onclick = () => {
-                    input.value = match.name;
-                    document.getElementById('item-category').value = match.category || '';
-                    list.innerHTML = '';
-                };
-                list.appendChild(div);
-            });
-        }
-    } catch (error) {
-        console.error('Autocomplete error:', error);
-        list.innerHTML = '';
     }
 }
 

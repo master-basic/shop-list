@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Shopping List - ShopList</title>
+    <script src="https://cdn.jsdelivr.net/npm/moment@2.29.4/min/moment.min.js"></script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="styles.css">
     <style>
@@ -30,6 +31,11 @@
                 <h1>🛒 Shopping List</h1>
                 <h2 id="month-name"></h2>
             </div>
+            <nav class="header-nav">
+                <a href="login.html" class="nav-link">🔐 Login</a>
+                <a href="report.html" class="nav-link">📊 Report</a>
+                <a href="admin.html" class="nav-link">⚙️ Admin</a>
+            </nav>
             <div class="header-right">
                 <button class="theme-toggle" onclick="toggleTheme()" title="Toggle Dark Mode">
                     🌙
@@ -125,7 +131,6 @@
 
     <script src="script.js"></script>
     <script src="utils.js"></script>
-    <script src="fetchItems.js"></script>
     <script src="editItems.js"></script>
     <script src="autocomplete.js"></script>
     <script src="darkMode.js"></script>

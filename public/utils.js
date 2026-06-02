@@ -1,5 +1,10 @@
 // Utility functions for the Shop-List application
 
+// Browser-compatible module export
+if (typeof module !== 'undefined' && module.exports) {
+    module.exports = { showToast, formatCurrency, formatDate, formatDateTime, isValidEmail, validateItemName, validatePrice, validateQuantity, validateDate, debounce, throttle, getCategoryColor, formatCategory, formatNumber, getCurrentISODate, getCurrentISODatetime, generateId, safeParseJSON, formatItemForDisplay };
+}
+
 // Toast notification system
 function showToast(message, type = 'info', duration = 3000) {
     // Remove existing toast
@@ -258,25 +263,3 @@ function formatItemForDisplay(item) {
     };
 }
 
-// Export all utilities
-module.exports = {
-    showToast,
-    formatCurrency,
-    formatDate,
-    formatDateTime,
-    isValidEmail,
-    validateItemName,
-    validatePrice,
-    validateQuantity,
-    validateDate,
-    debounce,
-    throttle,
-    getCategoryColor,
-    formatCategory,
-    formatNumber,
-    getCurrentISODate,
-    getCurrentISODatetime,
-    generateId,
-    safeParseJSON,
-    formatItemForDisplay
-};

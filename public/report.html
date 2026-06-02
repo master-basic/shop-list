@@ -9,17 +9,42 @@
 </head>
 <body>
     <div class="container">
-        <h1 class="page-header">Report</h1>
+        <header class="report-header">
+            <h1 class="page-header">Report</h1>
+            <nav class="report-nav">
+                <a href="index2.html" class="nav-link">🛒 Shopping List</a>
+                <a href="login.html" class="nav-link">🔐 Login</a>
+                <a href="admin.html" class="nav-link">⚙️ Admin</a>
+            </nav>
+        </header>
         
         <div class="filter-section">
             <div class="filter-row">
                 <div class="filter-group">
                     <label for="start-date">Start Date:</label>
-                    <input type="date" id="start-date">
+                    <div class="date-picker">
+                        <select id="start-period" class="period-select">
+                            <option value="month">This Month</option>
+                            <option value="week">This Week</option>
+                            <option value="day">Today</option>
+                            <option value="year">This Year</option>
+                            <option value="custom">Custom Range</option>
+                        </select>
+                        <input type="text" id="start-date" class="date-input" placeholder="YYYY-MM-DD">
+                    </div>
                 </div>
                 <div class="filter-group">
                     <label for="end-date">End Date:</label>
-                    <input type="date" id="end-date">
+                    <div class="date-picker">
+                        <select id="end-period" class="period-select">
+                            <option value="month">This Month</option>
+                            <option value="week" selected>Last 7 Days</option>
+                            <option value="day">Last 30 Days</option>
+                            <option value="year">This Year</option>
+                            <option value="custom">Custom Range</option>
+                        </select>
+                        <input type="text" id="end-date" class="date-input" placeholder="YYYY-MM-DD">
+                    </div>
                 </div>
                 <button class="generate-btn" onclick="generateReport()">Generate Report</button>
             </div>

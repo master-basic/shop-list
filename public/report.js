@@ -1,8 +1,31 @@
-// Report page functionality
-const config = require('../config');
-const utils = require('../utils');
+// Report page functionality (Browser-compatible)
 
 let currentUser = null;
+
+// Import utils functions from global scope
+const utils = typeof window !== 'undefined' && window.utils ? window.utils : {
+    showToast: function(msg, type) {
+        console.log(`[${type.toUpperCase()}] ${msg}`);
+    },
+    formatDate: function(date) {
+        if (!date) return 'N/A';
+        return new Date(date).toLocaleDateString('en-US', {
+            year: 'numeric', month: 'short', day: 'numeric'
+        });
+    },
+    formatCurrency: function(amount) {
+        return new Intl.NumberFormat('en-US', {
+            style: 'currency', currency: 'USD'
+        }).format(amount);
+    }
+};
+
+// Initialize theme
+async function initTheme() {
+    if (typeof darkMode !== 'undefined') {
+        await darkMode.init();
+    }
+}
 
 // Initialize the page
 async function init() {
@@ -16,29 +39,36 @@ async function checkAuthentication() {
     try {
         const response = await fetch('/api/current-user');
         if (!response.ok) {
-            utils.showToast('Please login first', 'error');
             window.location.href = '/login.html';
             return;
         }
         currentUser = await response.json();
     } catch (error) {
         console.error('Auth check error:', error);
-        utils.showToast('Authentication failed', 'error');
         window.location.href = '/login.html';
     }
 }
 
 // Setup event listeners
 function setupEventListeners() {
-    // Date range filter
     const startDateInput = document.getElementById('start-date');
     const endDateInput = document.getElementById('end-date');
+    const startPeriod = document.getElementById('start-period');
+    const endPeriod = document.getElementById('end-period');
     
     if (startDateInput) {
         startDateInput.addEventListener('change', generateReport);
+        startDateInput.addEventListener('input', formatDateInput);
     }
     if (endDateInput) {
         endDateInput.addEventListener('change', generateReport);
+        endDateInput.addEventListener('input', formatDateInput);
+    }
+    if (startPeriod) {
+        startPeriod.addEventListener('change', setPeriodDates);
+    }
+    if (endPeriod) {
+        endPeriod.addEventListener('change', setPeriodDates);
     }
 }
 
@@ -46,13 +76,79 @@ function setupEventListeners() {
 function setDefaultDateRange() {
     const startDateInput = document.getElementById('start-date');
     const endDateInput = document.getElementById('end-date');
-    if (startDateInput && endDateInput) {
+    const startPeriod = document.getElementById('start-period');
+    const endPeriod = document.getElementById('end-period');
+    if (startDateInput && endDateInput && startPeriod && endPeriod) {
         const now = new Date();
         const firstDay = new Date(now.getFullYear(), now.getMonth(), 1);
         const lastDay = new Date(now.getFullYear(), now.getMonth() + 1, 0);
-        startDateInput.value = firstDay.toISOString().split('T')[0];
-        endDateInput.value = lastDay.toISOString().split('T')[0];
+        startDateInput.value = formatDate(firstDay);
+        endDateInput.value = formatDate(lastDay);
+        startPeriod.value = 'month';
+        endPeriod.value = 'week';
     }
+}
+
+// Set period-based dates
+function setPeriodDates() {
+    const startDateInput = document.getElementById('start-date');
+    const endDateInput = document.getElementById('end-date');
+    const startPeriod = document.getElementById('start-period');
+    const endPeriod = document.getElementById('end-period');
+    
+    if (!startDateInput || !endDateInput || !startPeriod || !endPeriod) return;
+    
+    const now = new Date();
+    let startDate, endDate;
+    
+    // Start date based on start period
+    if (startPeriod.value === 'month') {
+        startDate = new Date(now.getFullYear(), now.getMonth(), 1);
+    } else if (startPeriod.value === 'week') {
+        startDate = new Date(now.setDate(now.getDate() - 7));
+    } else if (startPeriod.value === 'year') {
+        startDate = new Date(now.getFullYear(), 0, 1);
+    } else if (startPeriod.value === 'day') {
+        startDate = now;
+    } else {
+        startDate = now;
+    }
+    
+    // End date based on end period
+    if (endPeriod.value === 'month') {
+        endDate = new Date(now.getFullYear(), now.getMonth() + 1, 0);
+    } else if (endPeriod.value === 'week') {
+        endDate = now;
+    } else if (endPeriod.value === 'day') {
+        endDate = new Date(now.setDate(now.getDate() + 30));
+    } else if (endPeriod.value === 'year') {
+        endDate = new Date(now.getFullYear() + 1, 0, 1);
+    } else {
+        endDate = now;
+    }
+    
+    startDateInput.value = formatDate(startDate);
+    endDateInput.value = formatDate(endDate);
+    
+    // Generate report after setting dates
+    setTimeout(generateReport, 100);
+}
+
+// Format date input value to YYYY-MM-DD
+function formatDateInput() {
+    const startDateInput = document.getElementById('start-date');
+    const endDateInput = document.getElementById('end-date');
+    if (startDateInput) startDateInput.value = formatDate(new Date(startDateInput.value));
+    if (endDateInput) endDateInput.value = formatDate(new Date(endDateInput.value));
+}
+
+// Format date to YYYY-MM-DD
+function formatDate(date) {
+    if (!date) return '';
+    const year = date.getFullYear();
+    const month = String(date.getMonth() + 1).padStart(2, '0');
+    const day = String(date.getDate()).padStart(2, '0');
+    return `${year}-${month}-${day}`;
 }
 
 // Generate report based on date range and filters

@@ -1,8 +1,23 @@
 // Edit items functionality
-const config = require('../config');
-const utils = require('../utils');
-
 let currentUser = null;
+
+// Browser-compatible utils
+const utils = {
+    showToast: function(message, type = 'info', duration = 3000) {
+        const container = document.getElementById('toast-container');
+        if (!container) return;
+        
+        const toast = document.createElement('div');
+        toast.className = `toast ${type}`;
+        toast.textContent = message;
+        container.appendChild(toast);
+        
+        setTimeout(() => {
+            toast.style.opacity = '0';
+            setTimeout(() => toast.remove(), 300);
+        }, 3000);
+    }
+};
 
 // Initialize the page
 async function init() {
