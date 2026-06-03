@@ -11,21 +11,8 @@ function getMonthName() {
 // Set the month name in the HTML element with id 'month-name'
 document.getElementById('month-name').textContent = getMonthName();
 
-// Toast notification system
-function showToast(message, type = 'info') {
-    const container = document.getElementById('toast-container');
-    if (!container) return;
-    
-    const toast = document.createElement('div');
-    toast.className = `toast ${type}`;
-    toast.textContent = message;
-    container.appendChild(toast);
-    
-    setTimeout(() => {
-        toast.style.opacity = '0';
-        setTimeout(() => toast.remove(), 300);
-    }, 3000);
-}
+// Toast notification system - removed duplicate, using utils.js
+// Import showToast from utils.js
 
 // Initialize category filter chips
 let isDarkMode = false;
@@ -57,68 +44,81 @@ function setTheme(theme) {
 
 // Function to fetch items from the server and display them in the table
 async function fetchItems() {
-    const response = await fetch('/api/items');
-    const items = await response.json();
-    const list = document.getElementById('shopping-list');
-    list.innerHTML = '';
-    let totalAmount = 0;
-    let totalItems = 0;
-    let purchasedCount = 0;
-    
-    const activeCategory = document.querySelector('.category-chip.active')?.dataset.category || '';
-    const showBought = document.querySelector('.filter-buttons button[onclick*="showBoughtItems"]')?.classList.contains('active');
-    const showNotBought = document.querySelector('.filter-buttons button[onclick*="showNotBoughtItems"]')?.classList.contains('active');
-    const showArchived = document.querySelector('.filter-buttons button[onclick*="showArchivedItems"]')?.classList.contains('active');
+    try {
+        const response = await fetch('/api/items');
+        if (!response.ok) {
+            throw new Error(`Server responded with ${response.status}: ${response.statusText}`);
+        }
+        const items = await response.json();
+        if (!Array.isArray(items)) {
+            console.error('Expected items to be an array, got:', typeof items);
+            showToast('Invalid data format from server', 'error');
+            return;
+        }
+        const list = document.getElementById('shopping-list');
+        list.innerHTML = '';
+        let totalAmount = 0;
+        let totalItems = 0;
+        let purchasedCount = 0;
+        
+        const activeCategory = document.querySelector('.category-chip.active')?.dataset.category || '';
+        const showBought = document.querySelector('.filter-buttons button[onclick*="showBoughtItems"]')?.classList.contains('active');
+        const showNotBought = document.querySelector('.filter-buttons button[onclick*="showNotBoughtItems"]')?.classList.contains('active');
+        const showArchived = document.querySelector('.filter-buttons button[onclick*="showArchivedItems"]')?.classList.contains('active');
 
-    items.forEach(item => {
-        const tr = document.createElement('tr');
-        tr.dataset.id = item.id;
-        tr.dataset.date = item.date;
-        tr.dataset.boughtdate = item.bought_date || '';
-        const itemDate = new Date(item.date).toLocaleString('en-GB', { hour12: false });
-        const boughtDate = item.bought_date ? new Date(item.bought_date).toLocaleString('en-GB', { hour12: false }) : '';
-        const totalPrice = item.price * item.quantity;
-        totalAmount += totalPrice;
-        totalItems++;
-        if (item.bought_date) purchasedCount++;
+        items.forEach(item => {
+            const tr = document.createElement('tr');
+            tr.dataset.id = item.id;
+            tr.dataset.date = item.date;
+            tr.dataset.boughtdate = item.bought_date || '';
+            const itemDate = new Date(item.date).toLocaleString('en-GB', { hour12: false });
+            const boughtDate = item.bought_date ? new Date(item.bought_date).toLocaleString('en-GB', { hour12: false }) : '';
+            const totalPrice = item.price * item.quantity;
+            totalAmount += totalPrice;
+            totalItems++;
+            if (item.bought_date) purchasedCount++;
 
-        const category = item.category || 'All Categories';
-        const matchesCategory = !activeCategory || category === activeCategory;
-        const isBought = !!item.bought_date;
-        const matchesBoughtStatus = !showBought && !showNotBought || (showBought && isBought) || (showNotBought && !isBought);
-        const isArchived = item.archived ? true : false;
-        const matchesArchived = !showArchived || isArchived;
+            const category = item.category || 'All Categories';
+            const matchesCategory = !activeCategory || category === activeCategory;
+            const isBought = !!item.bought_date;
+            const matchesBoughtStatus = !showBought && !showNotBought || (showBought && isBought) || (showNotBought && !isBought);
+            const isArchived = item.archived ? true : false;
+            const matchesArchived = !showArchived || isArchived;
 
-        if (!matchesCategory || !matchesBoughtStatus || !matchesArchived) return;
+            if (!matchesCategory || !matchesBoughtStatus || !matchesArchived) return;
 
-        const priceField = item.bought_date ? 
-            item.price : 
-            `<input type="number" value="${item.price}" step="0.01" onchange="updatePrice(${item.id}, this.value)" class="price-input">`;
-        const quantityField = item.bought_date ? 
-            item.quantity : 
-            `<input type="number" value="${item.quantity}" min="1" step="1" onchange="updateQuantity(${item.id}, this.value)" class="quantity-input">`;
+            const priceField = item.bought_date ? 
+                item.price : 
+                `<input type="number" value="${item.price}" step="0.01" onchange="updatePrice(${item.id}, this.value)" class="price-input">`;
+            const quantityField = item.bought_date ? 
+                item.quantity : 
+                `<input type="number" value="${item.quantity}" min="1" step="1" onchange="updateQuantity(${item.id}, this.value)" class="quantity-input">`;
 
-        tr.innerHTML = `
-            <td class="${item.bought_date ? 'bought' : ''}">${item.name}</td>
-            <td>${itemDate}</td>
-            <td>${boughtDate}</td>
-            <td>${item.category || 'N/A'}</td>
-            <td>${priceField}</td>
-            <td>${quantityField}</td>
-            <td>${totalPrice.toFixed(2)}</td>
-            <td>${item.bought_by || ''}</td>
-            <td>
-                ${!item.bought_date ? `<button class="action-button bought-button" onclick="markAsBought(${item.id})">Bought</button>` : ''}
-                <button class="action-button archive-button" onclick="archiveItem(${item.id})">Archive</button>
-                ${!item.bought_date ? `<button class="action-button edit-button" onclick="enableEditing(this.closest('tr'))">Edit</button>` : ''}
-            </td>
-        `;
-        list.appendChild(tr);
-    });
-    
-    document.getElementById('total-amount').textContent = `AZN ${totalAmount.toFixed(2)}`;
-    document.getElementById('total-items').textContent = totalItems;
-    document.getElementById('purchased-count').textContent = purchasedCount;
+            tr.innerHTML = `
+                <td class="${item.bought_date ? 'bought' : ''}">${item.name}</td>
+                <td>${itemDate}</td>
+                <td>${boughtDate}</td>
+                <td>${item.category || 'N/A'}</td>
+                <td>${priceField}</td>
+                <td>${quantityField}</td>
+                <td>${totalPrice.toFixed(2)}</td>
+                <td>${item.bought_by || ''}</td>
+                <td>
+                    ${!item.bought_date ? `<button class="action-button bought-button" onclick="markAsBought(${item.id})">Bought</button>` : ''}
+                    <button class="action-button archive-button" onclick="archiveItem(${item.id})">Archive</button>
+                    ${!item.bought_date ? `<button class="action-button edit-button" onclick="enableEditing(this.closest('tr'))">Edit</button>` : ''}
+                </td>
+            `;
+            list.appendChild(tr);
+        });
+        
+        document.getElementById('total-amount').textContent = `AZN ${totalAmount.toFixed(2)}`;
+        document.getElementById('total-items').textContent = totalItems;
+        document.getElementById('purchased-count').textContent = purchasedCount;
+    } catch (error) {
+        console.error('Error fetching items:', error);
+        showToast('Failed to load items. Please refresh the page.', 'error');
+    }
 }
 
 // Function to update price for an item
@@ -134,11 +134,15 @@ async function updatePrice(itemId, newPrice) {
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify(item)
         });
-        if (!response.ok) throw new Error('Failed to update price');
+        if (!response.ok) {
+            const error = await response.json();
+            throw new Error(error.error || 'Failed to update price');
+        }
         showToast('Price updated successfully', 'success');
-        fetchItems();
+        await fetchItems();
     } catch (error) {
-        showToast(error.message, 'error');
+        console.error('Error updating price:', error);
+        showToast(error.message || 'Failed to update price', 'error');
     }
 }
 
@@ -155,11 +159,15 @@ async function updateQuantity(itemId, newQuantity) {
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify(item)
         });
-        if (!response.ok) throw new Error('Failed to update quantity');
+        if (!response.ok) {
+            const error = await response.json();
+            throw new Error(error.error || 'Failed to update quantity');
+        }
         showToast('Quantity updated successfully', 'success');
-        fetchItems();
+        await fetchItems();
     } catch (error) {
-        showToast(error.message, 'error');
+        console.error('Error updating quantity:', error);
+        showToast(error.message || 'Failed to update quantity', 'error');
     }
 }
 
@@ -218,7 +226,11 @@ function enableEditing(row) {
 
 // Function to cancel editing of a row
 async function cancelEditing(itemId) {
-    fetchItems();
+    try {
+        await fetchItems();
+    } catch (error) {
+        console.error('Error canceling edit:', error);
+    }
 }
 
 // Function to save changes made to a row
@@ -236,15 +248,20 @@ async function saveEditing(itemId) {
     };
     
     try {
-        await fetch(`/api/items/${itemId}`, {
+        const response = await fetch(`/api/items/${itemId}`, {
             method: 'PUT',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify(item)
         });
+        if (!response.ok) {
+            const error = await response.json();
+            throw new Error(error.error || 'Failed to update item');
+        }
         showToast('Item updated successfully', 'success');
-        fetchItems();
+        await fetchItems();
     } catch (error) {
-        showToast(error.message, 'error');
+        console.error('Error saving edit:', error);
+        showToast(error.message || 'Failed to update item', 'error');
     }
 }
 
@@ -312,7 +329,7 @@ async function addItem() {
             quantity: itemQuantity,
             category: itemCategory,
             date: now.toISOString().slice(0, 19).replace('T', ' '),
-            bought_date: null // Initialize as null for the database
+            bought_date: null
         };
 
         const response = await fetch('/api/items', {
@@ -335,8 +352,8 @@ async function addItem() {
         showToast('Item added successfully!', 'success');
         await fetchItems();
     } catch (error) {
-        console.error('Error:', error);
-        showToast(error.message, 'error');
+        console.error('Error adding item:', error);
+        showToast(error.message || 'Failed to add item', 'error');
     }
 }
 
@@ -356,13 +373,15 @@ async function markAsBought(itemId) {
         });
 
         if (!response.ok) {
-            throw new Error('Failed to mark item as bought');
+            const error = await response.json();
+            throw new Error(error.error || 'Failed to mark item as bought');
         }
 
         showToast('Item marked as bought', 'success');
         await fetchItems();
     } catch (error) {
-        showToast(error.message, 'error');
+        console.error('Error marking item as bought:', error);
+        showToast(error.message || 'Failed to mark item as bought', 'error');
     }
 }
 
@@ -373,13 +392,14 @@ async function archiveItem(itemId) {
             method: 'DELETE'
         });
         if (!response.ok) {
-            showToast('Failed to archive item', 'error');
-            return;
+            const error = await response.json();
+            throw new Error(error.error || 'Failed to archive item');
         }
         showToast('Item archived successfully', 'success');
-        fetchItems();
+        await fetchItems();
     } catch (error) {
-        showToast(error.message, 'error');
+        console.error('Error archiving item:', error);
+        showToast(error.message || 'Failed to archive item', 'error');
     }
 }
 
@@ -398,7 +418,8 @@ async function logout() {
         showToast('Logged out successfully', 'success');
         window.location.href = 'login.html';
     } catch (error) {
-        showToast(error.message, 'error');
+        console.error('Error logging out:', error);
+        showToast(error.message || 'Failed to log out', 'error');
     }
 }
 
@@ -409,40 +430,43 @@ async function showBoughtItems() {
     event.target.classList.add('active');
     
     const activeCategory = document.querySelector('.category-chip.active')?.dataset.category || '';
-    const response = await fetch('/api/items');
-    if (!response.ok) {
-        showToast('Failed to fetch items', 'error');
-        return;
+    try {
+        const response = await fetch('/api/items');
+        if (!response.ok) {
+            throw new Error('Failed to fetch items');
+        }
+        const items = await response.json();
+        const list = document.getElementById('shopping-list');
+        list.innerHTML = '';
+        let totalAmount = 0;
+        items.filter(item => item.bought_date).forEach(item => {
+            if (activeCategory && item.category !== activeCategory) return;
+            
+            const tr = document.createElement('tr');
+            const itemDate = new Date(item.date).toLocaleString('en-GB', { hour12: false });
+            const boughtDate = item.bought_date ? new Date(item.bought_date).toLocaleString('en-GB', { hour12: false }) : '';
+            const totalPrice = item.price * item.quantity;
+            totalAmount += totalPrice;
+            tr.innerHTML = `
+                <td class="bought">${item.name}</td>
+                <td>${itemDate}</td>
+                <td>${boughtDate}</td>
+                <td>${item.category || 'N/A'}</td>
+                <td>${item.price}</td>
+                <td>${item.quantity}</td>
+                <td>${totalPrice.toFixed(2)}</td>
+                <td>${item.bought_by || ''}</td>
+                <td>
+                    <button class="action-button archive-button" onclick="archiveItem(${item.id})">Archive</button>
+                </td>
+            `;
+            list.appendChild(tr);
+        });
+        document.getElementById('total-amount').textContent = `AZN ${totalAmount.toFixed(2)}`;
+    } catch (error) {
+        console.error('Error showing bought items:', error);
+        showToast('Failed to load bought items', 'error');
     }
-    const items = await response.json();
-    const list = document.getElementById('shopping-list');
-    list.innerHTML = '';
-    let totalAmount = 0;
-    items.filter(item => item.bought_date).forEach(item => {
-        // Apply category filter
-        if (activeCategory && item.category !== activeCategory) return;
-        
-        const tr = document.createElement('tr');
-        const itemDate = new Date(item.date).toLocaleString('en-GB', { hour12: false });
-        const boughtDate = item.bought_date ? new Date(item.bought_date).toLocaleString('en-GB', { hour12: false }) : '';
-        const totalPrice = item.price * item.quantity;
-        totalAmount += totalPrice;
-        tr.innerHTML = `
-            <td class="bought">${item.name}</td>
-            <td>${itemDate}</td>
-            <td>${boughtDate}</td>
-            <td>${item.category || 'N/A'}</td>
-            <td>${item.price}</td>
-            <td>${item.quantity}</td>
-            <td>${totalPrice.toFixed(2)}</td>
-            <td>${item.bought_by || ''}</td>
-            <td>
-                <button class="action-button archive-button" onclick="archiveItem(${item.id})">Archive</button>
-            </td>
-        `;
-        list.appendChild(tr);
-    });
-    document.getElementById('total-amount').textContent = `AZN ${totalAmount.toFixed(2)}`;
 }
 
 // Function to show not bought items
@@ -452,41 +476,44 @@ async function showNotBoughtItems() {
     event.target.classList.add('active');
     
     const activeCategory = document.querySelector('.category-chip.active')?.dataset.category || '';
-    const response = await fetch('/api/items');
-    if (!response.ok) {
-        showToast('Failed to fetch items', 'error');
-        return;
+    try {
+        const response = await fetch('/api/items');
+        if (!response.ok) {
+            throw new Error('Failed to fetch items');
+        }
+        const items = await response.json();
+        const list = document.getElementById('shopping-list');
+        list.innerHTML = '';
+        let totalAmount = 0;
+        items.filter(item => !item.bought_date).forEach(item => {
+            if (activeCategory && item.category !== activeCategory) return;
+            
+            const tr = document.createElement('tr');
+            const itemDate = new Date(item.date).toLocaleString('en-GB', { hour12: false });
+            const totalPrice = item.price * item.quantity;
+            totalAmount += totalPrice;
+            tr.innerHTML = `
+                <td>${item.name}</td>
+                <td>${itemDate}</td>
+                <td></td>
+                <td>${item.category || 'N/A'}</td>
+                <td>${item.price}</td>
+                <td>${item.quantity}</td>
+                <td>${totalPrice.toFixed(2)}</td>
+                <td></td>
+                <td>
+                    <button class="action-button bought-button" onclick="markAsBought(${item.id})">Bought</button>
+                    <button class="action-button archive-button" onclick="archiveItem(${item.id})">Archive</button>
+                    <button class="action-button edit-button" onclick="enableEditing(this.closest('tr'))">Edit</button>
+                </td>
+            `;
+            list.appendChild(tr);
+        });
+        document.getElementById('total-amount').textContent = `AZN ${totalAmount.toFixed(2)}`;
+    } catch (error) {
+        console.error('Error showing not bought items:', error);
+        showToast('Failed to load not bought items', 'error');
     }
-    const items = await response.json();
-    const list = document.getElementById('shopping-list');
-    list.innerHTML = '';
-    let totalAmount = 0;
-    items.filter(item => !item.bought_date).forEach(item => {
-        // Apply category filter
-        if (activeCategory && item.category !== activeCategory) return;
-        
-        const tr = document.createElement('tr');
-        const itemDate = new Date(item.date).toLocaleString('en-GB', { hour12: false });
-        const totalPrice = item.price * item.quantity;
-        totalAmount += totalPrice;
-        tr.innerHTML = `
-            <td>${item.name}</td>
-            <td>${itemDate}</td>
-            <td></td>
-            <td>${item.category || 'N/A'}</td>
-            <td>${item.price}</td>
-            <td>${item.quantity}</td>
-            <td>${totalPrice.toFixed(2)}</td>
-            <td></td>
-            <td>
-                <button class="action-button bought-button" onclick="markAsBought(${item.id})">Bought</button>
-                <button class="action-button archive-button" onclick="archiveItem(${item.id})">Archive</button>
-                <button class="action-button edit-button" onclick="enableEditing(this.closest('tr'))">Edit</button>
-            </td>
-        `;
-        list.appendChild(tr);
-    });
-    document.getElementById('total-amount').textContent = `AZN ${totalAmount.toFixed(2)}`;
 }
 
 // Function to show archived items
@@ -496,40 +523,43 @@ async function showArchivedItems() {
     event.target.classList.add('active');
     
     const activeCategory = document.querySelector('.category-chip.active')?.dataset.category || '';
-    const response = await fetch('/api/items');
-    if (!response.ok) {
-        showToast('Failed to fetch items', 'error');
-        return;
+    try {
+        const response = await fetch('/api/items');
+        if (!response.ok) {
+            throw new Error('Failed to fetch items');
+        }
+        const items = await response.json();
+        const list = document.getElementById('shopping-list');
+        list.innerHTML = '';
+        let totalAmount = 0;
+        items.filter(item => item.archived).forEach(item => {
+            if (activeCategory && item.category !== activeCategory) return;
+            
+            const tr = document.createElement('tr');
+            const itemDate = new Date(item.date).toLocaleString('en-GB', { hour12: false });
+            const boughtDate = item.bought_date ? new Date(item.bought_date).toLocaleString('en-GB', { hour12: false }) : '';
+            const totalPrice = item.price * item.quantity;
+            totalAmount += totalPrice;
+            tr.innerHTML = `
+                <td class="bought">${item.name}</td>
+                <td>${itemDate}</td>
+                <td>${boughtDate}</td>
+                <td>${item.category || 'N/A'}</td>
+                <td>${item.price}</td>
+                <td>${item.quantity}</td>
+                <td>${totalPrice.toFixed(2)}</td>
+                <td>${item.bought_by || ''}</td>
+                <td>
+                    <button class="action-button edit-button" onclick="enableEditing(this.closest('tr'))">Edit</button>
+                </td>
+            `;
+            list.appendChild(tr);
+        });
+        document.getElementById('total-amount').textContent = `AZN ${totalAmount.toFixed(2)}`;
+    } catch (error) {
+        console.error('Error showing archived items:', error);
+        showToast('Failed to load archived items', 'error');
     }
-    const items = await response.json();
-    const list = document.getElementById('shopping-list');
-    list.innerHTML = '';
-    let totalAmount = 0;
-    items.filter(item => item.archived).forEach(item => {
-        // Apply category filter
-        if (activeCategory && item.category !== activeCategory) return;
-        
-        const tr = document.createElement('tr');
-        const itemDate = new Date(item.date).toLocaleString('en-GB', { hour12: false });
-        const boughtDate = item.bought_date ? new Date(item.bought_date).toLocaleString('en-GB', { hour12: false }) : '';
-        const totalPrice = item.price * item.quantity;
-        totalAmount += totalPrice;
-        tr.innerHTML = `
-            <td class="bought">${item.name}</td>
-            <td>${itemDate}</td>
-            <td>${boughtDate}</td>
-            <td>${item.category || 'N/A'}</td>
-            <td>${item.price}</td>
-            <td>${item.quantity}</td>
-            <td>${totalPrice.toFixed(2)}</td>
-            <td>${item.bought_by || ''}</td>
-            <td>
-                <button class="action-button edit-button" onclick="enableEditing(this.closest('tr'))">Edit</button>
-            </td>
-        `;
-        list.appendChild(tr);
-    });
-    document.getElementById('total-amount').textContent = `AZN ${totalAmount.toFixed(2)}`;
 }
 
 // Initialize category filter chips

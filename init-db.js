@@ -1,52 +1,18 @@
 const mariadb = require('mariadb');
 const bcrypt = require('bcryptjs');
+const db = require('./db');
 
 require('dotenv').config();
 
 async function initializeDatabase() {
-    const pool = mariadb.createPool({
-        host: process.env.DB_HOST,
-        user: process.env.DB_USER,
-        password: process.env.DB_PASSWORD,
-        database: process.env.DB_NAME,
-        connectionLimit: 1
-    });
-
     let conn;
     try {
         conn = await pool.getConnection();
         console.log('Connected to database');
 
-        // Create items table with category column
-        await conn.query(`
-            CREATE TABLE IF NOT EXISTS items (
-                id INT AUTO_INCREMENT,
-                name VARCHAR(255) NOT NULL,
-                date DATETIME NOT NULL,
-                bought_date DATETIME DEFAULT NULL,
-                category VARCHAR(100),
-                price DECIMAL(10, 2) DEFAULT 0.00,
-                quantity INT DEFAULT 1,
-                total DECIMAL(10, 2) GENERATED ALWAYS AS (price * quantity) STORED,
-                created_by VARCHAR(255),
-                bought_by VARCHAR(255) DEFAULT NULL,
-                archived BOOLEAN DEFAULT FALSE,
-                PRIMARY KEY (id)
-            ) ENGINE=InnoDB
-        `);
-        console.log('Items table created/verified');
-
-        // Create users table with password hash column
-        await conn.query(`
-            CREATE TABLE IF NOT EXISTS users (
-                username VARCHAR(255) PRIMARY KEY,
-                password VARCHAR(255) NOT NULL,
-                isAdmin BOOLEAN DEFAULT FALSE,
-                created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-                updated_at DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
-            ) ENGINE=InnoDB
-        `);
-        console.log('Users table created/verified');
+        // Use db.createTable from db.js instead of duplicate table creation
+        await db.createTable();
+        console.log('Tables created/verified via db.createTable()');
 
         // Clear existing users (for demo setup)
         await conn.query('TRUNCATE TABLE users');
@@ -98,8 +64,16 @@ async function initializeDatabase() {
         console.error('Database initialization error:', error);
     } finally {
         if (conn) conn.release();
-        pool.end();
     }
 }
+
+// Create pool for this script
+const pool = mariadb.createPool({
+    host: process.env.DB_HOST,
+    user: process.env.DB_USER,
+    password: process.env.DB_PASSWORD,
+    database: process.env.DB_NAME,
+    connectionLimit: 1
+});
 
 initializeDatabase();
