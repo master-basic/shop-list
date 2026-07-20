@@ -16,8 +16,16 @@ document.getElementById('month-name').textContent = getMonthName();
 
 async function fetchItems() {
     try {
-        const showArchived = document.querySelector('.filter-buttons button[onclick*="showArchivedItems"]')?.classList.contains('active');
-        const url = showArchived ? '/api/items?includeArchived=true' : '/api/items';
+        const buttons = document.querySelectorAll('.filter-buttons button');
+        let filterType = 'all';
+        buttons.forEach(btn => {
+            if (btn.classList.contains('active')) {
+                const t = btn.dataset.filter;
+                if (t) filterType = t;
+            }
+        });
+        const isArchived = filterType === 'archived';
+        const url = isArchived ? '/api/items?includeArchived=true' : '/api/items';
         const response = await fetch(url);
         if (!response.ok) {
             throw new Error(`Server responded with ${response.status}: ${response.statusText}`);
@@ -35,9 +43,6 @@ async function fetchItems() {
         let purchasedCount = 0;
         
         const activeCategory = document.querySelector('.category-chip.active')?.dataset.category || '';
-        const showBought = document.querySelector('.filter-buttons button[onclick*="showBoughtItems"]')?.classList.contains('active');
-        const showNotBought = document.querySelector('.filter-buttons button[onclick*="showNotBoughtItems"]')?.classList.contains('active');
-        const showArchived = document.querySelector('.filter-buttons button[onclick*="showArchivedItems"]')?.classList.contains('active');
 
         items.forEach(item => {
             const tr = document.createElement('tr');
@@ -58,18 +63,12 @@ async function fetchItems() {
             const category = item.category || 'All Categories';
             const matchesCategory = !activeCategory || category === activeCategory;
             const isBought = !!item.bought_date;
-            const matchesBoughtStatus = !showBought && !showNotBought || (showBought && isBought) || (showNotBought && !isBought);
-            const isArchived = item.archived ? true : false;
-            const matchesArchived = !showArchived || isArchived;
+            const matchesFilter = filterType === 'all' ||
+                (filterType === 'bought' && isBought) ||
+                (filterType === 'not-bought' && !isBought) ||
+                (filterType === 'archived' && item.archived);
 
-            if (!matchesCategory || !matchesBoughtStatus || !matchesArchived) return;
-
-            const priceField = item.bought_date ? 
-                item.price : 
-                `<input type="number" value="${item.price}" step="0.01" onchange="updatePrice(${item.id}, this.value)" class="price-input">`;
-            const quantityField = item.bought_date ? 
-                item.quantity : 
-                `<input type="number" value="${item.quantity}" min="1" step="1" onchange="updateQuantity(${item.id}, this.value)" class="quantity-input">`;
+            if (!matchesCategory || !matchesFilter) return;
 
             const tdName = document.createElement('td');
             tdName.className = item.bought_date ? 'bought' : '';
@@ -85,10 +84,31 @@ async function fetchItems() {
             tdCategory.textContent = item.category || 'N/A';
             
             const tdPrice = document.createElement('td');
-            tdPrice.innerHTML = priceField;
+            if (isBought) {
+                tdPrice.textContent = item.price;
+            } else {
+                const input = document.createElement('input');
+                input.type = 'number';
+                input.value = item.price;
+                input.step = '0.01';
+                input.className = 'price-input';
+                input.onchange = () => updatePrice(item.id, input.value);
+                tdPrice.appendChild(input);
+            }
             
             const tdQuantity = document.createElement('td');
-            tdQuantity.innerHTML = quantityField;
+            if (isBought) {
+                tdQuantity.textContent = item.quantity;
+            } else {
+                const input = document.createElement('input');
+                input.type = 'number';
+                input.value = item.quantity;
+                input.min = '1';
+                input.step = '1';
+                input.className = 'quantity-input';
+                input.onchange = () => updateQuantity(item.id, input.value);
+                tdQuantity.appendChild(input);
+            }
             
             const tdTotalPrice = document.createElement('td');
             tdTotalPrice.textContent = totalPrice.toFixed(2);
@@ -97,11 +117,26 @@ async function fetchItems() {
             tdBoughtBy.textContent = item.bought_by || '';
             
             const tdActions = document.createElement('td');
-            tdActions.innerHTML = `
-                ${!item.bought_date ? `<button class="action-button bought-button" onclick="markAsBought(${item.id})">Bought</button>` : ''}
-                <button class="action-button archive-button" onclick="archiveItem(${item.id})">Archive</button>
-                ${!item.bought_date ? `<button class="action-button edit-button" onclick="enableEditing(this.closest('tr'))">Edit</button>` : ''}
-            `;
+            const actionButtons = [];
+            if (!isBought) {
+                const btnBought = document.createElement('button');
+                btnBought.className = 'action-button bought-button';
+                btnBought.textContent = 'Bought';
+                btnBought.onclick = () => markAsBought(item.id);
+                actionButtons.push(btnBought);
+                
+                const btnEdit = document.createElement('button');
+                btnEdit.className = 'action-button edit-button';
+                btnEdit.textContent = 'Edit';
+                btnEdit.onclick = () => enableEditing(tr);
+                actionButtons.push(btnEdit);
+            }
+            const btnArchive = document.createElement('button');
+            btnArchive.className = 'action-button archive-button';
+            btnArchive.textContent = 'Archive';
+            btnArchive.onclick = () => archiveItem(item.id);
+            actionButtons.push(btnArchive);
+            actionButtons.forEach(btn => tdActions.appendChild(btn));
             
             tdActions.addEventListener('click', (e) => {
                 if (e.target.classList.contains('archive-button')) {
@@ -433,229 +468,19 @@ async function logout() {
 async function showFilteredItems(type) {
     const buttons = document.querySelectorAll('.filter-buttons button');
     buttons.forEach(btn => btn.classList.remove('active'));
-    
-    // Activate the button that corresponds to the type
-    const typeMap = { 'bought': 0, 'not-bought': 1, 'archived': 2 };
-    if (typeMap[type] !== undefined && buttons[typeMap[type]]) {
-        buttons[typeMap[type]].classList.add('active');
-    }
-    
-    const activeCategory = document.querySelector('.category-chip.active')?.dataset.category || '';
-    try {
-        let items, url;
-        switch (type) {
-            case 'bought':
-                url = '/api/items';
-                items = items.filter(item => item.bought_date);
-                break;
-            case 'not-bought':
-                url = '/api/items';
-                items = items.filter(item => !item.bought_date);
-                break;
-            case 'archived':
-                url = '/api/items?includeArchived=true';
-                items = items.filter(item => item.archived);
-                break;
-        }
-
-        const response = await fetch(url);
-        if (!response.ok) {
-            throw new Error('Failed to fetch items');
-        }
-        const allItems = await response.json();
-        items = allItems.filter(item => {
-            if (type === 'bought') return item.bought_date;
-            if (type === 'not-bought') return !item.bought_date;
-            if (type === 'archived') return item.archived;
-            return false;
-        });
-        
-        const list = document.getElementById('shopping-list');
-        list.innerHTML = '';
-        let totalAmount = 0;
-        items.filter(item => {
-            if (activeCategory && item.category !== activeCategory) return false;
-            return true;
-        }).forEach(item => {
-            
-            const tr = document.createElement('tr');
-            const itemDate = new Date(item.date).toLocaleString('en-GB', { hour12: false });
-            const boughtDate = item.bought_date ? new Date(item.bought_date).toLocaleString('en-GB', { hour12: false }) : '';
-            const totalPrice = item.price * item.quantity;
-            totalAmount += totalPrice;
-            
-            const tdName = document.createElement('td');
-            tdName.className = 'bought';
-            tdName.textContent = item.name;
-            
-            const tdDate = document.createElement('td');
-            tdDate.textContent = itemDate;
-            
-            const tdBoughtDate = document.createElement('td');
-            tdBoughtDate.textContent = boughtDate;
-            
-            const tdCategory = document.createElement('td');
-            tdCategory.textContent = item.category || 'N/A';
-            
-            const tdPrice = document.createElement('td');
-            tdPrice.textContent = item.price;
-            
-            const tdQuantity = document.createElement('td');
-            tdQuantity.textContent = item.quantity;
-            
-            const tdTotalPrice = document.createElement('td');
-            tdTotalPrice.textContent = totalPrice.toFixed(2);
-            
-            const tdBoughtBy = document.createElement('td');
-            tdBoughtBy.textContent = item.bought_by || '';
-            
-            const tdActions = document.createElement('td');
-            const actionButtons = [];
-            
-            if (!item.bought_date) {
-                const btnBought = document.createElement('button');
-                btnBought.className = 'action-button bought-button';
-                btnBought.textContent = 'Bought';
-                btnBought.onclick = () => markAsBought(item.id);
-                actionButtons.push(btnBought);
-            }
-            
-            const btnArchive = document.createElement('button');
-            btnArchive.className = 'action-button archive-button';
-            btnArchive.textContent = 'Archive';
-            btnArchive.onclick = () => archiveItem(item.id);
-            actionButtons.push(btnArchive);
-            
-            const btnEdit = document.createElement('button');
-            btnEdit.className = 'action-button edit-button';
-            btnEdit.textContent = 'Edit';
-            btnEdit.onclick = () => enableEditing(tr);
-            actionButtons.push(btnEdit);
-            
-            actionButtons.forEach(btn => tdActions.appendChild(btn));
-            
-            tr.appendChild(tdName);
-            tr.appendChild(tdDate);
-            tr.appendChild(tdBoughtDate);
-            tr.appendChild(tdCategory);
-            tr.appendChild(tdPrice);
-            tr.appendChild(tdQuantity);
-            tr.appendChild(tdTotalPrice);
-            tr.appendChild(tdBoughtBy);
-            tr.appendChild(tdActions);
-            
-            list.appendChild(tr);
-        });
-        document.getElementById('total-amount').textContent = `AZN ${totalAmount.toFixed(2)}`;
-        document.getElementById('total-items').textContent = list.children.length;
-        document.getElementById('purchased-count').textContent = '—';
-        if (list.children.length === 0) {
-            list.innerHTML = '<tr><td colspan="9" class="empty-state">No items found</td></tr>';
-        }
-    } catch (error) {
-        console.error('Error showing filtered items:', error);
-        showToast('Failed to load items', 'error');
-    }
-}
-
-// Initialize category filter chips
-document.addEventListener('DOMContentLoaded', () => {
-    initCategoryFilter();
-});
-
-function initCategoryFilter() {
-    const chips = document.querySelectorAll('.category-chip');
-    chips.forEach(chip => {
-        chip.addEventListener('click', () => {
-            toggleCategoryFilter(chip.dataset.category);
-        });
+    buttons.forEach(btn => {
+        if (btn.dataset.filter === type) btn.classList.add('active');
     });
-}
-
-// Fetch and display the items when the page loads
-fetchItems();
-    try {
-        const response = await fetch('/api/items?includeArchived=true');
-        if (!response.ok) {
-            throw new Error('Failed to fetch items');
-        }
-        const items = await response.json();
-        const list = document.getElementById('shopping-list');
-        list.innerHTML = '';
-        let totalAmount = 0;
-        items.filter(item => item.archived).forEach(item => {
-            if (activeCategory && item.category !== activeCategory) return;
-            
-            const tr = document.createElement('tr');
-            const itemDate = new Date(item.date).toLocaleString('en-GB', { hour12: false });
-            const boughtDate = item.bought_date ? new Date(item.bought_date).toLocaleString('en-GB', { hour12: false }) : '';
-            const totalPrice = item.price * item.quantity;
-            totalAmount += totalPrice;
-            
-            const tdName = document.createElement('td');
-            tdName.className = 'bought';
-            tdName.textContent = item.name;
-            
-            const tdDate = document.createElement('td');
-            tdDate.textContent = itemDate;
-            
-            const tdBoughtDate = document.createElement('td');
-            tdBoughtDate.textContent = boughtDate;
-            
-            const tdCategory = document.createElement('td');
-            tdCategory.textContent = item.category || 'N/A';
-            
-            const tdPrice = document.createElement('td');
-            tdPrice.textContent = item.price;
-            
-            const tdQuantity = document.createElement('td');
-            tdQuantity.textContent = item.quantity;
-            
-            const tdTotalPrice = document.createElement('td');
-            tdTotalPrice.textContent = totalPrice.toFixed(2);
-            
-            const tdBoughtBy = document.createElement('td');
-            tdBoughtBy.textContent = item.bought_by || '';
-            
-            const tdActions = document.createElement('td');
-            tdActions.className = 'actions';
-            const btnRestore = document.createElement('button');
-            btnRestore.className = 'action-button bought-button';
-            btnRestore.textContent = 'Restore';
-            btnRestore.onclick = () => restoreItem(item.id);
-            tdActions.appendChild(btnRestore);
-            const btnEdit = document.createElement('button');
-            btnEdit.className = 'action-button edit-button';
-            btnEdit.textContent = 'Edit';
-            btnEdit.onclick = () => enableEditing(tr);
-            tdActions.appendChild(btnEdit);
-            
-            tr.appendChild(tdName);
-            tr.appendChild(tdDate);
-            tr.appendChild(tdBoughtDate);
-            tr.appendChild(tdCategory);
-            tr.appendChild(tdPrice);
-            tr.appendChild(tdQuantity);
-            tr.appendChild(tdTotalPrice);
-            tr.appendChild(tdBoughtBy);
-            tr.appendChild(tdActions);
-            
-            list.appendChild(tr);
-        });
-        document.getElementById('total-amount').textContent = `AZN ${totalAmount.toFixed(2)}`;
-        document.getElementById('total-items').textContent = list.children.length;
-        document.getElementById('purchased-count').textContent = '—';
-        if (list.children.length === 0) {
-            list.innerHTML = '<tr><td colspan="9" class="empty-state">No archived items found</td></tr>';
-        }
-    } catch (error) {
-        console.error('Error showing archived items:', error);
-        showToast('Failed to load archived items', 'error');
-    }
+    
+    await fetchItems();
 }
 
 function exportCSV() {
-    const includeArchived = document.querySelector('.filter-buttons .active')?.textContent === 'Archived';
+    const buttons = document.querySelectorAll('.filter-buttons button');
+    let includeArchived = false;
+    buttons.forEach(btn => {
+        if (btn.classList.contains('active') && btn.dataset.filter === 'archived') includeArchived = true;
+    });
     window.open(`/api/items/export/csv?includeArchived=${includeArchived}`, '_blank');
 }
 

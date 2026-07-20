@@ -82,7 +82,25 @@
         <div style="text-align: center;">
             <a href="index2.html" class="back-btn">Back to Home</a>
         </div>
+        <button class="theme-toggle fixed" onclick="toggleTheme()" title="Toggle theme">
+            <svg class="theme-icon" viewBox="0 0 24 24" width="20" height="20">
+                <path class="sun" d="M12 3v1m0 16v1m-9-9H2m20 0h-1M5.64 5.64l.71.71m12.02 12.02l.71.71M4.23 18.36l.71-.71m12.02-12.02l.71-.71M12 6a6 6 0 100 12 6 6 0 000-12z" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+                <path class="moon" d="M21 12.79A9 9 0 1111.21 3 7 7 0 0021 12.79z" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+            </svg>
+        </button>
     </div>
+    
+    <div id="edit-modal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3 class="modal-title"></h3>
+                <button class="modal-close" onclick="closeModal()">&times;</button>
+            </div>
+            <div class="modal-body"></div>
+        </div>
+    </div>
+    
+    <div class="toast-container" id="toast-container"></div>
     
     <script src="darkMode.js"></script>
     <script src="utils.js"></script>

@@ -20,7 +20,12 @@
                 <a href="admin.html" class="nav-link">Admin</a>
             </nav>
             <div class="header-right">
-                <button class="theme-toggle" onclick="toggleTheme()" title="Toggle theme"></button>
+                <button class="theme-toggle" onclick="toggleTheme()" title="Toggle theme">
+                    <svg class="theme-icon" viewBox="0 0 24 24" width="20" height="20">
+                        <path class="sun" d="M12 3v1m0 16v1m-9-9H2m20 0h-1M5.64 5.64l.71.71m12.02 12.02l.71.71M4.23 18.36l.71-.71m12.02-12.02l.71-.71M12 6a6 6 0 100 12 6 6 0 000-12z" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+                        <path class="moon" d="M21 12.79A9 9 0 1111.21 3 7 7 0 0021 12.79z" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+                    </svg>
+                </button>
             </div>
         </header>
 
@@ -71,9 +76,9 @@
                 <span class="category-chip" data-category="Personal Care">Personal Care</span>
             </div>
             <div class="filter-buttons">
-                <button class="button button-secondary" onclick="showBoughtItems(event)">Bought</button>
-                <button class="button button-secondary" onclick="showNotBoughtItems(event)">Not Bought</button>
-                <button class="button button-secondary" onclick="showArchivedItems(event)">Archived</button>
+                <button class="button button-secondary" data-filter="bought" onclick="showFilteredItems('bought')">Bought</button>
+                <button class="button button-secondary" data-filter="not-bought" onclick="showFilteredItems('not-bought')">Not Bought</button>
+                <button class="button button-secondary" data-filter="archived" onclick="showFilteredItems('archived')">Archived</button>
                 <button class="button button-secondary" onclick="exportCSV()">Export CSV</button>
             </div>
         </div>
