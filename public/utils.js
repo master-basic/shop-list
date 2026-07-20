@@ -76,6 +76,24 @@ function showToast(message, type = 'info', duration = 3000) {
     });
 }
 
+// Loading spinner
+function showLoading() {
+    let overlay = document.getElementById('loading-overlay');
+    if (!overlay) {
+        overlay = document.createElement('div');
+        overlay.id = 'loading-overlay';
+        overlay.className = 'loading-overlay';
+        overlay.innerHTML = '<div class="spinner"></div>';
+        document.body.appendChild(overlay);
+    }
+    overlay.classList.add('active');
+}
+
+function hideLoading() {
+    const overlay = document.getElementById('loading-overlay');
+    if (overlay) overlay.classList.remove('active');
+}
+
 // Format currency (AZN)
 function formatCurrency(amount) {
     return new Intl.NumberFormat('az-AZ', {

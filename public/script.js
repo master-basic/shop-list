@@ -14,7 +14,28 @@ document.getElementById('month-name').textContent = getMonthName();
 // Toast notification system - removed duplicate, using utils.js
 // Import showToast from utils.js
 
+// Sort state
+let sortState = { column: '', direction: 'asc' };
+
+function sortItems(items) {
+    if (!sortState.column) return items;
+    const col = sortState.column;
+    const dir = sortState.direction === 'asc' ? 1 : -1;
+    return [...items].sort((a, b) => {
+        let va = a[col], vb = b[col];
+        if (col === 'total') { va = a.price * a.quantity; vb = b.price * b.quantity; }
+        if (va == null) va = '';
+        if (vb == null) vb = '';
+        if (typeof va === 'string') va = va.toLowerCase();
+        if (typeof vb === 'string') vb = vb.toLowerCase();
+        if (va < vb) return -1 * dir;
+        if (va > vb) return 1 * dir;
+        return 0;
+    });
+}
+
 async function fetchItems() {
+    showLoading();
     try {
         const buttons = document.querySelectorAll('.filter-buttons button');
         let filterType = 'all';
@@ -44,6 +65,7 @@ async function fetchItems() {
         
         const activeCategory = document.querySelector('.category-chip.active')?.dataset.category || '';
 
+        items = sortItems(items);
         items.forEach(item => {
             const tr = document.createElement('tr');
             tr.dataset.id = item.id;
@@ -167,7 +189,9 @@ async function fetchItems() {
         if (list.children.length === 0) {
             list.innerHTML = '<tr><td colspan="9" class="empty-state">No items found</td></tr>';
         }
+        hideLoading();
     } catch (error) {
+        hideLoading();
         console.error('Error fetching items:', error);
         showToast('Failed to load items. Please refresh the page.', 'error');
     }
@@ -327,6 +351,7 @@ async function saveEditing(itemId) {
 
 // Function to add a new item to the list
 async function addItem() {
+    showLoading();
     try {
         const userResponse = await fetch('/api/current-user');
         if (!userResponse.ok) {
@@ -370,9 +395,11 @@ async function addItem() {
         document.getElementById('item-quantity').value = '';
         document.getElementById('item-category').value = '';
 
+        hideLoading();
         showToast('Item added successfully!', 'success');
         await fetchItems();
     } catch (error) {
+        hideLoading();
         console.error('Error adding item:', error);
         showToast(error.message || 'Failed to add item', 'error');
     }
@@ -380,6 +407,7 @@ async function addItem() {
 
 // Function to mark an item as bought
 async function markAsBought(itemId) {
+    showLoading();
     try {
         const userResponse = await fetch('/api/current-user');
         if (!userResponse.ok) {
@@ -398,9 +426,11 @@ async function markAsBought(itemId) {
             throw new Error(error.error || 'Failed to mark item as bought');
         }
 
+        hideLoading();
         showToast('Item marked as bought', 'success');
         await fetchItems();
     } catch (error) {
+        hideLoading();
         console.error('Error marking item as bought:', error);
         showToast(error.message || 'Failed to mark item as bought', 'error');
     }
@@ -409,7 +439,7 @@ async function markAsBought(itemId) {
 // Function to archive an item from the list
 async function archiveItem(itemId) {
     if (!confirm('Are you sure you want to archive this item?')) return;
-    
+    showLoading();
     try {
         const response = await fetch(`/api/items/${itemId}`, {
             method: 'DELETE'
@@ -418,9 +448,11 @@ async function archiveItem(itemId) {
             const error = await response.json();
             throw new Error(error.error || 'Failed to archive item');
         }
+        hideLoading();
         showToast('Item archived', 'success');
         await fetchItems();
     } catch (error) {
+        hideLoading();
         console.error('Error archiving item:', error);
         showToast(error.message || 'Failed to archive item', 'error');
     }
@@ -428,6 +460,7 @@ async function archiveItem(itemId) {
 
 // Function to restore an archived item
 async function restoreItem(itemId) {
+    showLoading();
     try {
         const response = await fetch(`/api/items/${itemId}/restore`, {
             method: 'PUT'
@@ -436,9 +469,11 @@ async function restoreItem(itemId) {
             const error = await response.json();
             throw new Error(error.error || 'Failed to restore item');
         }
+        hideLoading();
         showToast('Item restored', 'success');
         await fetchItems();
     } catch (error) {
+        hideLoading();
         console.error('Error restoring item:', error);
         showToast(error.message || 'Failed to restore item', 'error');
     }
@@ -484,10 +519,30 @@ function exportCSV() {
     window.open(`/api/items/export/csv?includeArchived=${includeArchived}`, '_blank');
 }
 
-// Initialize category filter chips
+// Initialize category filter chips and sortable columns
 document.addEventListener('DOMContentLoaded', () => {
     initCategoryFilter();
+    initSortableColumns();
 });
+
+function initSortableColumns() {
+    document.querySelectorAll('th.sortable').forEach(th => {
+        th.addEventListener('click', () => {
+            const col = th.dataset.sort;
+            if (sortState.column === col) {
+                sortState.direction = sortState.direction === 'asc' ? 'desc' : 'asc';
+            } else {
+                sortState.column = col;
+                sortState.direction = 'asc';
+            }
+            document.querySelectorAll('th.sortable').forEach(h => {
+                h.classList.remove('asc', 'desc');
+            });
+            th.classList.add(sortState.direction);
+            fetchItems();
+        });
+    });
+}
 
 function initCategoryFilter() {
     const chips = document.querySelectorAll('.category-chip');

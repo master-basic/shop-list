@@ -134,6 +134,7 @@ async function generateReport() {
     if (startDate) params.append('startDate', startDate);
     if (endDate) params.append('endDate', endDate);
     
+    showLoading();
     try {
         const response = await fetch(`/api/items?${params}`);
         if (!response.ok) throw new Error('Failed to fetch items');
@@ -141,7 +142,9 @@ async function generateReport() {
         const items = await response.json();
         renderReportTable(items);
         calculateReportStats(items);
+        hideLoading();
     } catch (error) {
+        hideLoading();
         console.error('Error generating report:', error);
         showToast('Failed to generate report', 'error');
     }
@@ -285,6 +288,7 @@ async function toggleBought(button) {
     const itemId = row.dataset.id;
     const itemName = row.querySelector('td')?.textContent || 'Item';
 
+    showLoading();
     try {
         const response = await fetch(`/api/items/${itemId}/bought`, {
             method: 'PUT',
@@ -293,6 +297,7 @@ async function toggleBought(button) {
             }
         });
 
+        hideLoading();
         if (response.ok) {
             const data = await response.json();
             const isBought = data.bought;
@@ -303,6 +308,7 @@ async function toggleBought(button) {
             showToast('Failed to update status', 'error');
         }
     } catch (error) {
+        hideLoading();
         console.error('Error toggling bought status:', error);
         showToast('Failed to update status', 'error');
     }
@@ -311,12 +317,13 @@ async function toggleBought(button) {
 // Delete item
 async function deleteItem(itemId) {
     if (!confirm('Are you sure you want to delete this item?')) return;
-
+    showLoading();
     try {
         const response = await fetch(`/api/items/${itemId}`, {
             method: 'DELETE'
         });
 
+        hideLoading();
         if (response.ok) {
             const row = document.querySelector(`tr[data-id="${itemId}"]`);
             if (row) row.remove();

@@ -1172,6 +1172,73 @@ tr .empty-state {
   background: var(--bg-hover);
 }
 
+/* ===== LOADING SPINNER ===== */
+.loading-overlay {
+  display: none;
+  position: fixed;
+  z-index: 9999;
+  inset: 0;
+  background: rgba(7, 7, 13, 0.5);
+  align-items: center;
+  justify-content: center;
+  backdrop-filter: blur(2px);
+}
+
+.loading-overlay.active {
+  display: flex;
+}
+
+.spinner {
+  width: 40px;
+  height: 40px;
+  border: 3px solid var(--border);
+  border-top-color: var(--primary);
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+/* ===== SORTABLE COLUMNS ===== */
+th.sortable {
+  cursor: pointer;
+  user-select: none;
+  position: relative;
+  padding-right: 24px;
+}
+
+th.sortable:hover {
+  color: var(--primary);
+}
+
+th.sortable::after {
+  content: '';
+  position: absolute;
+  right: 8px;
+  top: 50%;
+  transform: translateY(-50%);
+  border-left: 5px solid transparent;
+  border-right: 5px solid transparent;
+}
+
+th.sortable.asc::after {
+  border-bottom: 6px solid var(--text-muted);
+}
+
+th.sortable.desc::after {
+  border-top: 6px solid var(--text-muted);
+}
+
+th.sortable.asc:hover::after {
+  border-bottom-color: var(--primary);
+}
+
+th.sortable.desc:hover::after {
+  border-top-color: var(--primary);
+}
+
 /* ===== RESPONSIVE ===== */
 @media (max-width: 768px) {
   body { padding: 12px; }

@@ -47,14 +47,16 @@ async function logout() {
 
 // Fetch users from database
 async function fetchUsers() {
+    showLoading();
     try {
         const response = await fetch('/api/users');
         if (!response.ok) throw new Error('Failed to fetch users');
         
         const users = await response.json();
-        console.log('Users:', users);
         renderUserTable(users);
+        hideLoading();
     } catch (error) {
+        hideLoading();
         console.error('Error fetching users:', error);
         showToast('Failed to load users', 'error');
     }
@@ -156,6 +158,7 @@ async function saveEditForm() {
         isAdmin: document.getElementById('edit-isadmin')?.checked || false
     };
     
+    showLoading();
     try {
         const response = await fetch(`/api/users/${user.username}`, {
             method: 'PUT',
@@ -163,12 +166,14 @@ async function saveEditForm() {
             body: JSON.stringify(user)
         });
         
+        hideLoading();
         if (!response.ok) throw new Error('Failed to update user');
         
         closeModal();
         await loadUsers();
         showToast('User updated successfully', 'success');
     } catch (error) {
+        hideLoading();
         console.error('Error saving user:', error);
         showToast('Failed to update user', 'error');
     }
@@ -177,10 +182,11 @@ async function saveEditForm() {
 // Delete user
 async function deleteUser(username) {
     if (!confirm(`Are you sure you want to delete user "${username}"?`)) return;
-    
+    showLoading();
     try {
         const response = await fetch(`/api/users/${username}`, { method: 'DELETE' });
         
+        hideLoading();
         if (response.ok) {
             showToast('User deleted successfully', 'success');
             await fetchUsers();
@@ -188,6 +194,7 @@ async function deleteUser(username) {
             showToast('Failed to delete user', 'error');
         }
     } catch (error) {
+        hideLoading();
         console.error('Delete error:', error);
         showToast('Failed to delete user', 'error');
     }
@@ -204,6 +211,7 @@ async function createUser() {
         return;
     }
 
+    showLoading();
     try {
         const response = await fetch('/api/users', {
             method: 'POST',
@@ -211,6 +219,7 @@ async function createUser() {
             body: JSON.stringify({ username, password, isAdmin })
         });
 
+        hideLoading();
         if (response.ok) {
             showToast('User created successfully', 'success');
             document.getElementById('new-username').value = '';
@@ -222,6 +231,7 @@ async function createUser() {
             showToast(data.error || 'Failed to create user', 'error');
         }
     } catch (error) {
+        hideLoading();
         console.error('Create user error:', error);
         showToast('Failed to create user', 'error');
     }
