@@ -48,8 +48,8 @@ D:\Repos\shop-list\
 | P0 | Remove .env from git tracking | `.env`, `.gitignore` | ✅ Completed |
 | P0 | Add rate limiting to login route | `app.js`, `package.json` | ✅ Completed |
 | P1 | Fix editUser: accept `req.body.username` for rename | `app.js`, `db.js` | ✅ Completed |
-| P1 | Add un-archive endpoint + db function | `app.js`, `db.js` | 🟡 db.js + route done, frontend restore button pending |
-| P1 | Add Helmet security headers middleware | `app.js`, `package.json` | ⬜ Pending |
+| P1 | Add un-archive endpoint + db function | `app.js`, `db.js`, `script.js` | ✅ Completed |
+| P1 | Add Helmet security headers middleware | `app.js`, `package.json` | ✅ Completed |
 | P2 | Split app.js into routes/middleware layers | `routes/`, `middleware/` | ⬜ Pending |
 
 ### Qwen Tasks (frontend, UX, polish)
@@ -111,4 +111,6 @@ When done:
 | Session | DeepSeek | P0: Add rate limiting to login ✅ |
 | Session | DeepSeek | P1: Fix editUser rename in app.js+db.js ✅ |
 | Session | DeepSeek | P1: Add unarchiveItem to db.js + export ✅ |
-| Session | DeepSeek | P1: un-archive route in app.js — pending |
+| Session | DeepSeek | P1: un-archive route in app.js + frontend Restore button ✅ |
+| Session | DeepSeek | P1: Helmet security headers middleware ✅ |
+| Session | DeepSeek | P1: All four P1 tasks done — commit 6eb66b6 ✅ |
