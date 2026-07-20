@@ -9,27 +9,43 @@ const db = require('./db');
 const app = express();
 const PORT = process.env.PORT || 3000;
 
-// Create a write stream (in append mode)
 const accessLogStream = fs.createWriteStream(path.join(__dirname, 'log.txt'), { flags: 'a' });
 
-// Setup the logger
 app.use(morgan('combined', { stream: accessLogStream }));
-
 app.use(express.json());
 app.use(cookieParser());
 app.use(express.static('public'));
 
+// Security headers
+app.use((req, res, next) => {
+    res.setHeader('X-Content-Type-Options', 'nosniff');
+    res.setHeader('X-Frame-Options', 'DENY');
+    res.setHeader('X-XSS-Protection', '1; mode=block');
+    res.setHeader('Referrer-Policy', 'strict-origin-when-cross-origin');
+    next();
+});
+
 // Initialize the database when the server starts
 db.initializeDatabase();
 
-// Middleware to require authentication
-function requireAuth(req, res, next) {
+// Middleware to require authentication (verifies user exists in DB)
+async function requireAuth(req, res, next) {
     const username = req.cookies.username;
     if (!username) {
         return res.status(401).json({ error: 'Not authenticated' });
     }
-    req.username = username;
-    next();
+    try {
+        const user = await db.getUserByUsername(username);
+        if (!user) {
+            return res.status(401).json({ error: 'Invalid session' });
+        }
+        req.username = username;
+        req.user = user;
+        next();
+    } catch (error) {
+        console.error('Auth check error:', error);
+        res.status(500).json({ error: 'Internal server error' });
+    }
 }
 
 // Middleware to require admin privileges
@@ -44,6 +60,7 @@ async function requireAdmin(req, res, next) {
             return res.status(403).json({ error: 'Admin access required' });
         }
         req.username = username;
+        req.user = user;
         next();
     } catch (error) {
         console.error('Auth check error:', error);
@@ -51,28 +68,22 @@ async function requireAdmin(req, res, next) {
     }
 }
 
-// Route to get the shopping list
+// Route to get the shopping list (with optional date/category filtering)
 app.get('/api/items', async (req, res) => {
-    try {
-        const includeArchived = req.query.includeArchived === 'true';
-        const items = await db.getItems(includeArchived);
-        res.json(items);
-    } catch (error) {
-        console.error('Error fetching items:', error);
-        res.status(500).json({ error: 'Internal server error' });
-    }
-});
-
-// Route to get items with date range and category filters
-app.get('/api/items/filter', async (req, res) => {
     try {
         const includeArchived = req.query.includeArchived === 'true';
         const { startDate, endDate, category } = req.query;
 
-        const rows = await db.getFilteredItems(startDate, endDate, category, includeArchived);
-        res.json(rows);
+        // If filter params are provided, use the filter endpoint logic
+        if (startDate || endDate || (category && category !== 'all')) {
+            const rows = await db.getFilteredItems(startDate, endDate, category, includeArchived);
+            return res.json(rows);
+        }
+
+        const items = await db.getItems(includeArchived);
+        res.json(items);
     } catch (error) {
-        console.error('Error filtering items:', error);
+        console.error('Error fetching items:', error);
         res.status(500).json({ error: 'Internal server error' });
     }
 });
