@@ -54,20 +54,27 @@ D:\Repos\shop-list\
 
 ### Qwen Tasks (frontend, UX, polish)
 
-| Priority | Task | Files | Depends On |
-|----------|------|-------|------------|
-| P0 | Fix XSS: replace innerHTML with createElement + textContent in all table renderers | `script.js`, `admin.js`, `report.js` | Qwen ✅ | Completed |
-| P0 | Add `confirm()` dialog before archive in main list | `script.js` | Qwen ✅ | Completed |
-| P1 | Fix `formatCurrency` to use decimal format with AZN prefix | `utils.js` | Qwen ✅ | Completed |
-| P1 | Remove duplicate `formatDate()` from `report.js` | `report.js` | Qwen ✅ | Completed |
-| P1 | Fix XSS in `admin.js` user table | `admin.js` | Qwen ✅ | Completed |
-| P1 | Fix XSS in `report.js` item table and buyer summary | `report.js` | Qwen ✅ | Completed |
-| P1 | Fix formatCurrency locale from en-US to az-AZ | `utils.js` | Nothing |
-| P1 | Remove duplicate `formatDate()` from report.js (use utils.js version) | `report.js` | Nothing |
-| P1 | Remove dead code: `populateItemSelect`, `filterItems`, `selectItem`, `updateItemList` | `script.js` | Nothing |
-| P1 | Consolidate showBought/showNotBought/showArchived into single `showFilteredItems(type)` | `script.js` | Nothing |
-| P2 | Add default SVG icons to theme-toggle buttons (prevents empty flash) | `index2.html`, `login.html`, `admin.html`, `report.html` | Nothing |
-| P2 | Add favicon to all pages | All HTML `<head>` sections | Nothing |
+| Priority | Task | Files | Status |
+|----------|------|-------|--------|
+| P0 | Fix XSS: replace innerHTML with createElement + textContent in all table renderers | `script.js`, `admin.js`, `report.js` | ✅ Completed |
+| P0 | Add `confirm()` dialog before archive in main list | `script.js` | ✅ Completed |
+| P1 | Fix `formatCurrency` to use AZN prefix instead of locale | `utils.js` | ✅ Completed |
+| P1 | Remove duplicate `formatDate()` from `report.js` | `report.js` | ✅ Completed |
+| P1 | Remove dead code: `populateItemSelect`, `filterItems`, `selectItem`, `updateItemList` | `script.js` | 🔴 Pending |
+| P1 | Consolidate showBought/showNotBought/showArchived into single `showFilteredItems(type)` | `script.js` | 🔴 Pending |
+| P1 | Fix admin.js editUser prompt — replace with modal (like editItems.js pattern) | `admin.js`, `admin.html` | 🔴 Pending |
+| P1 | Add text search bar that filters items by name/category in real-time | `index2.html`, `script.js`, `styles.css` | 🔴 Pending |
+| P1 | Add sortable table columns (click header to sort name/price/date/category) | `script.js`, `report.js`, `admin.js`, `styles.css` | 🔴 Pending |
+| P1 | Add loading spinner/overlay during all API fetches (no empty white flash) | `script.js`, `admin.js`, `report.js`, `styles.css` | 🔴 Pending |
+| P2 | Add default SVG icons to theme-toggle buttons (prevents empty flash) | `index2.html`, `login.html`, `admin.html`, `report.html` | 🔴 Pending |
+| P2 | Add favicon to all pages | All HTML `<head>` sections | 🔴 Pending |
+| P2 | UX: Bulk select actions (checkbox per item, select all, bulk archive/bought/delete) | `script.js`, `index2.html`, `styles.css` | 🔴 Pending |
+| P2 | UX: Undo toast after archive ("Item archived — Undo?") | `script.js`, `utils.js` | 🔴 Pending |
+| P2 | UX: Quick-add keyboard shortcut (Enter auto-advances, Ctrl+Enter submits) | `script.js`, `index2.html` | 🔴 Pending |
+| P2 | UX: Favorite/frequent items section (top 10 most added) | `script.js`, `index2.html`, `styles.css` | 🔴 Pending |
+| P2 | UX: Item notes/description field (optional text per item) | All layers | 🔴 Pending |
+| P2 | Mobile: Card-based layout on small screens (table wraps poorly at 480px) | `styles.css`, all HTML | 🔴 Pending |
+| P2 | Print: Add print stylesheet (hide nav/buttons, clean checkbox list) | `styles.css` | 🔴 Pending |
 
 ---
 

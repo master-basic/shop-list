@@ -258,9 +258,77 @@ New file with documented environment variables so new developers know what to co
 
 ---
 
-## Still not fixed (conscious decision)
+## Session 2 (Current) — Architecture & Security Deep Dive
 
-1. **XSS via innerHTML** — requires either DOMPurify library or rewriting all rendering to use `textContent` + `createElement`. Too large for this pass.
-2. **Real session management** — still uses cookie-based "auth" but now at least verifies user exists. JWTs or express-session would be the real fix.
-3. **No CSRF protection** — requires a token pattern.
-4. **No input validation** — needs a library like joi.
+### Changes made in this session
+
+#### 1. `.env` removed from git tracking
+- Added `.env` to `.gitignore`
+- `git rm --cached .env` removed from tracking
+- Committed as `41ca611`
+
+#### 2. Rate limiting on login
+- Installed `express-rate-limit` (added to `package.json`)
+- 10 requests per 15-minute window on `POST /api/login`
+- Returns 429 with `{ error: 'Too many login attempts...' }` when exceeded
+- Limiter moved into `routes/auth.js` after architecture split
+
+#### 3. Fixed `editUser` rename
+- `db.js`: `updateUser()` now accepts optional `newUsername` param
+- `routes/users.js`: PUT /api/users/:username reads `req.body.username` → calls `db.updateUser(username, newUsername, ...)`
+
+#### 4. Added un-archive (`unarchiveItem`)
+- `db.js`: Added `unarchiveItem(itemId)` — sets `archived = NULL`
+- `routes/items.js`: Added `PUT /api/items/:id/restore` endpoint
+- `script.js`: Added `restoreItem(id)` + "Restore" button in archived view
+
+#### 5. Added Helmet security headers
+- Installed `helmet` (added to `package.json`)
+- Applied in `app.js`: `app.use(helmet({ contentSecurityPolicy: false }))`
+- CSP disabled to allow inline styles/scripts (no build step)
+
+#### 6. Architecture Split — app.js → routes/ + middleware/
+- Before: 337-line monolithic `app.js` with all routes inline
+- After:
+  - `app.js` (49 lines) — bootstrap only: imports, middleware registration, route mounting, server start
+  - `middleware/auth.js` — `requireAuth`, `requireAdmin` middleware functions
+  - `routes/items.js` — GET/POST/PUT/DELETE /api/items, PUT /api/items/:id/bought, PUT /api/items/:id/restore
+  - `routes/users.js` — GET/POST/PUT/DELETE /api/users
+  - `routes/auth.js` — POST /api/login (with rate limiter), GET /api/current-user, POST /api/logout
+
+## What's still pending
+
+### Qwen tasks (frontend, UX, polish)
+
+| Priority | Task | Files |
+|----------|------|-------|
+| P1 | Remove dead code: `populateItemSelect`, `filterItems`, `selectItem`, `updateItemList` | `script.js` |
+| P1 | Consolidate showBought/showNotBought/showArchived into `showFilteredItems(type)` | `script.js` |
+| P1 | Replace admin.js editUser prompt with modal (like editItems.js pattern) | `admin.js`, `admin.html` |
+| P1 | Add text search bar filtering items by name/category in real-time | `index2.html`, `script.js`, `styles.css` |
+| P1 | Add sortable table columns (click header to sort name/price/date/category) | `script.js`, `report.js`, `admin.js`, `styles.css` |
+| P1 | Add loading spinner/overlay during all API fetches | `script.js`, `admin.js`, `report.js`, `styles.css` |
+| P2 | Default SVG icons in theme-toggle buttons (prevent empty flash) | `index2.html`, `login.html`, `admin.html`, `report.html` |
+| P2 | Add favicon to all pages | All HTML `<head>` |
+| P2 | Bulk select actions + "Select all" | `script.js`, `index2.html`, `styles.css` |
+| P2 | Undo toast after archive | `script.js`, `utils.js` |
+| P2 | Quick-add keyboard shortcut (Enter auto-advance, Ctrl+Enter submit) | `script.js`, `index2.html` |
+| P2 | Favorite/frequent items section (top 10) | `script.js`, `index2.html`, `styles.css` |
+| P2 | Item notes/description field | All layers |
+| P2 | Card-based mobile layout (table wraps poorly at 480px) | `styles.css`, all HTML |
+| P2 | Print stylesheet (hide nav/buttons, clean list) | `styles.css` |
+
+### DeepSeek tasks (backend/infra, future)
+
+| Priority | Task |
+|----------|------|
+| P3 | Input validation with Joi/Zod |
+| P3 | Real session management (JWT or express-session) |
+| P3 | CSRF protection |
+| P3 | Docker + Docker Compose for one-command setup |
+| P3 | Rate limiting on all mutation endpoints |
+| P3 | Multiple shopping lists (database support) |
+| P3 | Sharing lists with other users + permission levels |
+| P3 | Export to CSV / PDF |
+| P3 | Spending history charts (monthly, category breakdown) |
+| P3 | Migration system (db-migrate or similar) |

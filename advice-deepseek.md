@@ -393,36 +393,36 @@ Scripts: darkMode.js, utils.js, report.js
 
 ### 🔴 CRITICAL — Fix immediately
 
-| # | Bug | File:Line | Details | Fix |
-|---|-----|-----------|---------|-----|
-| B1 | **XSS everywhere** | All JS files | Item names inserted via `innerHTML` template strings. `<img src=x onerror=alert(1)>` in item name = full XSS. | Replace all `innerHTML` assignments with `document.createElement()` + `textContent`. See exact spots below. |
-| B2 | **.env committed to git** | .gitignore | `.env` with DB credentials is tracked in git history | `git rm --cached .env`, add to `.gitignore`, rewrite history or rotate creds |
-| B3 | **No rate limiting on login** | app.js | POST /api/login has no rate limiter. Brute force paradise. | Add `express-rate-limit` middleware |
+| # | Bug | File:Line | Details | Fix | Status |
+|---|-----|-----------|---------|-----|--------|
+| B1 | **XSS everywhere** | All JS files | Item names inserted via `innerHTML` template strings. | Replace all `innerHTML` with `document.createElement()` + `textContent`. | ✅ Fixed — Qwen |
+| B2 | **.env committed to git** | .gitignore | `.env` with DB credentials tracked in git history | `git rm --cached .env`, add to `.gitignore` | ✅ Fixed |
+| B3 | **No rate limiting on login** | app.js | POST /api/login had no rate limiter. | Add `express-rate-limit` middleware | ✅ Fixed |
 
 ### 🟡 HIGH — Fix soon
 
-| # | Bug | File:Line | Details | Fix |
-|---|-----|-----------|---------|-----|
-| B4 | **editUser cannot rename** | app.js:281-291 | PUT /api/users/:username reads `req.params.username` but ignores `req.body.username`. Frontend sends `newUsername` in body but server never uses it. | Add `if (req.body.username)` → update username column |
-| B5 | **editUser prompts are ugly** | admin.js:108-112 | Uses `prompt()` for editing. No validation, bad UX. | Should open a modal or inline form |
-| B6 | **No un-archive** | app.js / script.js | Once archived, items can never be un-archived. No endpoint, no UI. | Add PUT /api/items/:id/restore endpoint + button in archived view |
-| B7 | **No confirmation on archive in main list** | script.js:369 | `archiveItem()` calls DELETE directly without `confirm()`. Report and admin pages use `confirm()` but main page doesn't. | Add `if (!confirm('Archive this item?')) return;` |
-| B8 | **formatCurrency uses wrong locale** | utils.js | `Intl.NumberFormat('en-US', { currency: 'AZN' })` — en-US locale doesn't support AZN, falls back to USD format. | Change to `'az-AZ'` locale or manual formatting: `AZN ${amount.toFixed(2)}` |
-| B9 | **No loading states** | All pages | Every API call has no visual feedback. UI freezes during requests. | Add spinner/overlay during fetch, or at minimum disable buttons |
+| # | Bug | File:Line | Details | Fix | Status |
+|---|-----|-----------|---------|-----|--------|
+| B4 | **editUser cannot rename** | `routes/users.js`, `db.js` | PUT /api/users/:username ignores `req.body.username`. | Read `req.body.username` → pass to `db.updateUser()` | ✅ Fixed |
+| B5 | **editUser prompts are ugly** | admin.js:108-112 | Uses `prompt()` for editing. No validation, bad UX. | Should open a modal or inline form | 🔴 Pending |
+| B6 | **No un-archive** | `routes/items.js` / `script.js` | No way to restore archived items. | Add PUT /api/items/:id/restore endpoint + Restore button | ✅ Fixed |
+| B7 | **No confirmation on archive in main list** | script.js | `archiveItem()` called DELETE without `confirm()`. | Add `if (!confirm('Archive this item?')) return;` | ✅ Fixed — Qwen |
+| B8 | **formatCurrency uses wrong locale** | utils.js | en-US locale doesn't support AZN. | `AZN ${amount.toFixed(2)}` prefix format | ✅ Fixed |
+| B9 | **No loading states** | All pages | No visual feedback during API calls. | Add spinner/overlay during fetch | 🔴 Pending |
 
 ### 🟢 LOW — Polish
 
-| # | Bug | File:Line | Details |
-|---|-----|-----------|---------|
-| B10 | **No empty state styling** | styles.css | `tr .empty-state` exists but might not span correctly in all views |
-| B11 | **showBought/NotBought/Archived duplicate code** | script.js:408-544 | Three nearly identical functions. Duplicating rendering logic. |
-| B12 | **Dead code in script.js** | script.js | `populateItemSelect()`, `filterItems()`, `selectItem()`, `updateItemList()` — never called |
-| B13 | **Dead endpoint /api/items/filter** | app.js | The filter route exists but no frontend calls it (everything goes through /api/items with params) |
-| B14 | **No page title icons** | All HTML | No favicon |
-| B15 | **Theme toggle button empty before DOMContentLoaded** | darkMode.js | Button has no innerHTML until DOMContentLoaded fires. Brief flash of empty button. | Put default SVG in HTML |
-| B16 | **report.js has duplicate formatDate** | report.js:136 | Same function exists in utils.js. report.js defines its own copy. |
-| B17 | **admin.js prompt editing has no category/price/quantity** | admin.js:108 | Only edits username + password + isAdmin via ugly prompts. Not inline with other item editing patterns. |
-| B18 | **No sort on any table** | All | Tables render in DB order. No click-to-sort on column headers. |
+| # | Bug | File:Line | Details | Fix | Status |
+|---|-----|-----------|---------|-----|--------|
+| B10 | **No empty state styling** | styles.css | Empty state messages not styled. | Added `.empty-state` CSS | ✅ Fixed |
+| B11 | **showBought/NotBought/Archived duplicate code** | script.js | Three nearly identical functions. | Consolidate into single `showFilteredItems(type)` | 🔴 Pending |
+| B12 | **Dead code in script.js** | script.js | `populateItemSelect()`, `filterItems()`, `selectItem()`, `updateItemList()` | Remove | 🔴 Pending |
+| B13 | **Dead endpoint /api/items/filter** | app.js | Nothing calls it. | Already removed in architecture split | ✅ Fixed |
+| B14 | **No page title icons** | All HTML | No favicon | Add favicon to all HTML pages | 🔴 Pending |
+| B15 | **Theme toggle button empty before DOMContentLoaded** | darkMode.js | Button empty until DOMContentLoaded. | Put default SVG in HTML | 🔴 Pending |
+| B16 | **duplicate formatDate in report.js** | report.js:136 | Same as utils.js. | Remove from report.js | ✅ Fixed |
+| B17 | **admin.js prompt editing** | admin.js:108 | Only edits username/password via prompts. | Modal or inline form | 🔴 Pending |
+| B18 | **No sort on any table** | All | No click-to-sort on headers. | Add sort handlers | 🔴 Pending |
 
 ---
 
