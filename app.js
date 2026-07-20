@@ -3,6 +3,7 @@ const express = require('express');
 const path = require('path');
 const cookieParser = require('cookie-parser');
 const morgan = require('morgan');
+const rateLimit = require('express-rate-limit');
 const fs = require('fs');
 const db = require('./db');
 
@@ -23,6 +24,15 @@ app.use((req, res, next) => {
     res.setHeader('X-XSS-Protection', '1; mode=block');
     res.setHeader('Referrer-Policy', 'strict-origin-when-cross-origin');
     next();
+});
+
+// Rate limiter for login endpoint
+const loginLimiter = rateLimit({
+    windowMs: 15 * 60 * 1000,
+    max: 10,
+    message: { error: 'Too many login attempts. Try again in 15 minutes.' },
+    standardHeaders: true,
+    legacyHeaders: false
 });
 
 // Initialize the database when the server starts
@@ -196,7 +206,7 @@ app.delete('/api/items/:id', requireAuth, async (req, res) => {
 });
 
 // Route to authenticate a user
-app.post('/api/login', async (req, res) => {
+app.post('/api/login', loginLimiter, async (req, res) => {
     try {
         const { username, password } = req.body;
         const user = await db.authenticateUser(username, password);
