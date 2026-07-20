@@ -115,22 +115,68 @@ async function editUser(username) {
         
         const user = await response.json();
         
-        const newUsername = prompt('Edit Username:', user.username);
-        if (!newUsername) return;
+        // Create edit modal
+        showModal('Edit User', `
+            <div class="edit-form">
+                <div class="form-group">
+                    <label for="edit-username">Username:</label>
+                    <input type="text" id="edit-username" name="username" class="form-control" value="${user.username}" required>
+                </div>
+                
+                <div class="form-group">
+                    <label for="edit-password">Password (leave empty to keep current):</label>
+                    <input type="password" id="edit-password" name="password" class="form-control">
+                </div>
+                
+                <div class="form-group checkbox-group">
+                    <label for="edit-isadmin">
+                        <input type="checkbox" id="edit-isadmin" name="isAdmin" ${user.isAdmin ? 'checked' : ''}>
+                        Set Admin Access
+                    </label>
+                </div>
+                
+                <div class="form-actions">
+                    <button type="submit" class="btn btn-primary">Save Changes</button>
+                    <button type="button" class="btn btn-secondary" onclick="closeModal()">Cancel</button>
+                </div>
+            </div>
+        `);
+    } catch (error) {
+        console.error('Error editing user:', error);
+        showToast('Failed to load user data', 'error');
+    }
+}
+
+// Save changes from edit form
+async function saveEditForm() {
+    const form = document.querySelector('.edit-form');
+    if (!form) return;
+    
+    const formData = new FormData(form);
+    const username = formData.get('username');
+    const user = {
+        username: formData.get('username'),
+        password: formData.get('password') || null,
+        isAdmin: formData.get('isAdmin') === 'on'
+    };
+    
+    try {
+        const response = await fetch(`/api/users/${username}`, {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(user)
+        });
         
-        const newPassword = prompt('New Password (leave empty to keep current):', '');
-        const newIsAdmin = prompt('Set Admin Access (y/n):', 'n')?.toLowerCase() === 'y';
+        if (!response.ok) throw new Error('Failed to update user');
         
-        try {
-            const response = await fetch(`/api/users/${username}`, {
-                method: 'PUT',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ 
-                    username: newUsername,
-                    password: newPassword || null,
-                    isAdmin: newIsAdmin
-                })
-            });
+        closeModal();
+        await loadUsers();
+        showToast('User updated successfully', 'success');
+    } catch (error) {
+        console.error('Error saving user:', error);
+        showToast('Failed to update user', 'error');
+    }
+}
             
             if (response.ok) {
                 showToast('User updated successfully', 'success');

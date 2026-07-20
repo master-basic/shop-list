@@ -54,6 +54,7 @@ D:\Repos\shop-list\
 | P3 | Add Joi input validation on all POST/PUT endpoints | `middleware/validate.js`, routes | ✅ Completed |
 | P3 | Add rate limiting on all mutation endpoints (200 req/15min) | `app.js` | ✅ Completed |
 | P3 | Add CSV export endpoint + download button | `routes/items.js`, `index2.html`, `script.js` | ✅ Completed |
+| P3 | JWT session management (replace raw username cookie with signed JWT) | `middleware/jwt.js`, `middleware/auth.js`, `routes/auth.js` | ✅ Completed |
 
 ### Qwen Tasks (frontend, UX, polish)
 
