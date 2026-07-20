@@ -248,8 +248,12 @@ New file with documented environment variables so new developers know what to co
 | `public/index2.html` | Added edit-modal + CSS, fixed onclick event params |
 | `public/editItems.js` | Target `.modal-body` instead of `.modal-content` |
 | `public/report.js` | Fixed date mutation, toggle bought/unbuy, correct initial button state |
+| `public/editItems.js` | Target `.modal-body`, remove dead `saveChanges` code, simplify `cancelEditing` |
+| `public/report.js` | Guard `formatDateInput` against invalid partial dates |
 | `public/report.html` | Added missing `utils.js` script |
 | `public/admin.js` | Added `createUser()`, renamed `handleLogout`→`logout` |
+| `public/script.js` | Added `dataset.name`/`dataset.category`/`dataset.price`/`dataset.quantity` to rows |
+| `package.json` | Removed unused `body-parser` and `moment` |
 | `.env.example` | New file |
 
 ---
