@@ -1,7 +1,15 @@
 const db = require('../db');
+const { verifyToken } = require('./jwt');
+
+function getUsername(req) {
+    const token = req.cookies?.token;
+    if (!token) return null;
+    const decoded = verifyToken(token);
+    return decoded ? decoded.username : null;
+}
 
 async function requireAuth(req, res, next) {
-    const username = req.cookies.username;
+    const username = getUsername(req);
     if (!username) {
         return res.status(401).json({ error: 'Not authenticated' });
     }
@@ -20,7 +28,7 @@ async function requireAuth(req, res, next) {
 }
 
 async function requireAdmin(req, res, next) {
-    const username = req.cookies.username;
+    const username = getUsername(req);
     if (!username) {
         return res.status(401).json({ error: 'Not authenticated' });
     }
@@ -38,4 +46,4 @@ async function requireAdmin(req, res, next) {
     }
 }
 
-module.exports = { requireAuth, requireAdmin };
+module.exports = { requireAuth, requireAdmin, getUsername };

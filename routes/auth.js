@@ -3,6 +3,8 @@ const rateLimit = require('express-rate-limit');
 const router = express.Router();
 const db = require('../db');
 const { validate, loginSchema } = require('../middleware/validate');
+const { generateToken } = require('../middleware/jwt');
+const { getUsername } = require('../middleware/auth');
 
 const loginLimiter = rateLimit({
     windowMs: 15 * 60 * 1000,
@@ -17,10 +19,12 @@ router.post('/login', loginLimiter, validate(loginSchema), async (req, res) => {
         const { username, password } = req.body;
         const user = await db.authenticateUser(username, password);
         if (user) {
-            res.cookie('username', username, {
+            const token = generateToken(username);
+            res.cookie('token', token, {
                 httpOnly: true,
                 secure: false,
-                sameSite: 'lax'
+                sameSite: 'lax',
+                maxAge: 7 * 24 * 60 * 60 * 1000
             });
             res.json({ success: true, isAdmin: user.isAdmin });
         } else {
@@ -33,7 +37,7 @@ router.post('/login', loginLimiter, validate(loginSchema), async (req, res) => {
 });
 
 router.post('/logout', (req, res) => {
-    res.clearCookie('username', {
+    res.clearCookie('token', {
         httpOnly: true,
         secure: false,
         sameSite: 'lax'
@@ -43,7 +47,7 @@ router.post('/logout', (req, res) => {
 
 router.get('/current-user', async (req, res) => {
     try {
-        const username = req.cookies.username;
+        const username = getUsername(req);
         if (username) {
             const user = await db.getUserByUsername(username);
             res.json(user);
