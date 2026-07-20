@@ -1038,6 +1038,29 @@ tr .empty-state {
   font-weight: 600;
 }
 
+/* ===== CHART SECTION ===== */
+.chart-section {
+  background: var(--bg-surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  padding: 24px;
+  margin-top: 20px;
+}
+
+.chart-section h2 {
+  font-size: 15px;
+  font-weight: 600;
+  margin-bottom: 16px;
+  padding-bottom: 12px;
+  border-bottom: 1px solid var(--border);
+  color: var(--text-primary);
+}
+
+.chart-container {
+  position: relative;
+  height: 280px;
+}
+
 /* back button */
 .back-btn {
   display: inline-block;

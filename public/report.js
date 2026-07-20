@@ -142,6 +142,7 @@ async function generateReport() {
         const items = await response.json();
         renderReportTable(items);
         calculateReportStats(items);
+        renderSpendingChart(items);
         hideLoading();
     } catch (error) {
         hideLoading();
@@ -217,6 +218,64 @@ function renderReportTable(items) {
         tr.appendChild(tdActions);
         
         tableBody.appendChild(tr);
+    });
+}
+
+// Spending chart instance
+let spendingChart = null;
+
+// Render spending chart
+function renderSpendingChart(items) {
+    const canvas = document.getElementById('spending-chart');
+    if (!canvas) return;
+
+    const monthlyData = {};
+    items.forEach(item => {
+        const d = new Date(item.bought_date || item.date);
+        const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
+        monthlyData[key] = (monthlyData[key] || 0) + (item.price * item.quantity);
+    });
+
+    const labels = Object.keys(monthlyData).sort();
+    const data = labels.map(k => monthlyData[k]);
+
+    if (spendingChart) spendingChart.destroy();
+
+    const isDark = document.documentElement.getAttribute('data-theme') !== 'light';
+    const gridColor = isDark ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.06)';
+    const textColor = isDark ? '#8888a0' : '#6b6b80';
+
+    spendingChart = new Chart(canvas, {
+        type: 'bar',
+        data: {
+            labels,
+            datasets: [{
+                label: 'Spending (AZN)',
+                data,
+                backgroundColor: 'rgba(0, 212, 170, 0.6)',
+                borderColor: '#00d4aa',
+                borderWidth: 2,
+                borderRadius: 4
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: { display: false }
+            },
+            scales: {
+                x: {
+                    ticks: { color: textColor },
+                    grid: { color: gridColor }
+                },
+                y: {
+                    beginAtZero: true,
+                    ticks: { color: textColor, callback: v => `AZN ${v}` },
+                    grid: { color: gridColor }
+                }
+            }
+        }
     });
 }
 

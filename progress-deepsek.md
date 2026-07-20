@@ -374,6 +374,16 @@ New file with documented environment variables so new developers know what to co
 - `app.js`: Applied `csrfCookie` and `csrfProtect` globally on `/api` routes
 - `public/utils.js`: Overrides `window.fetch` to automatically read the `csrf-token` cookie and attach it as `X-CSRF-Token` header on all non-GET requests — zero changes needed to existing fetch calls
 
+#### 13. Spending history charts
+- `public/report.html`: Added Chart.js 4 CDN, chart section with `<canvas id="spending-chart">` after buyer summary
+- `public/report.js`: `renderSpendingChart(items)` aggregates item totals by `YYYY-MM` (using bought_date or date), renders a Chart.js bar chart with teal bars; theme-aware colors (detects `data-theme`); `spendingChart` instance is reused/destroyed on re-render; called from `generateReport()`
+- `public/styles.css`: `.chart-section` card matching buyer-summary style, `.chart-container` with 280px height
+
+### Future feature work (not assigned)
+- `middleware/csrf.js`: Double-submit cookie pattern — `csrfCookie` sets a non-httpOnly `csrf-token` cookie with `sameSite:strict`; `csrfProtect` rejects POST/PUT/DELETE if `X-CSRF-Token` header doesn't match the cookie
+- `app.js`: Applied `csrfCookie` and `csrfProtect` globally on `/api` routes
+- `public/utils.js`: Overrides `window.fetch` to automatically read the `csrf-token` cookie and attach it as `X-CSRF-Token` header on all non-GET requests — zero changes needed to existing fetch calls
+
 ### Future feature work (not assigned)
 - `db.js`: Added `getFrequentItems(limit = 10)` — groups items by name+category, orders by `COUNT(*) DESC`
 - `routes/items.js`: Added `GET /api/items/frequent` endpoint (public, no auth required)
@@ -406,5 +416,4 @@ New file with documented environment variables so new developers know what to co
 |----------|------|----------|
 | Data | Multiple shopping lists (schema + UI) | P3 |
 | Data | Sharing lists with permissions | P3 |
-| Data | Spending history charts | P3 |
 | Infra | Migration system (db-migrate) | P3 |
