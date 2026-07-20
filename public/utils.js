@@ -1,6 +1,24 @@
 // Utility functions for the Shop-List application
 
 // Browser-compatible module export
+// CSRF protection: override global fetch to include CSRF token on mutation requests
+(function() {
+    const origFetch = window.fetch;
+    window.fetch = function csrfFetch(url, options) {
+        options = options || {};
+        const method = (options.method || 'GET').toUpperCase();
+        if (method !== 'GET' && method !== 'HEAD' && method !== 'OPTIONS') {
+            const match = document.cookie.match(/(?:^|;\s*)csrf-token=([^;]*)/);
+            const csrfToken = match ? match[1] : null;
+            if (csrfToken) {
+                options.headers = options.headers || {};
+                options.headers['X-CSRF-Token'] = csrfToken;
+            }
+        }
+        return origFetch.call(window, url, options);
+    };
+})();
+
 if (typeof module !== 'undefined' && module.exports) {
     module.exports = { showToast, formatCurrency, formatDate, formatDateTime, isValidEmail, validateItemName, validatePrice, validateQuantity, validateDate, debounce, throttle, getCategoryColor, formatCategory, formatNumber, getCurrentISODate, getCurrentISODatetime, generateId, safeParseJSON, formatItemForDisplay };
 }

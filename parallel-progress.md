@@ -85,6 +85,7 @@ D:\Repos\shop-list\
 | P2 | UX: Favorite/frequent items section (top 10 most added) | `script.js`, `index2.html`, `styles.css`, `routes/items.js`, `db.js` | ✅ Completed |
 | P2 | UX: Item notes/description field (optional text per item) | All layers | ✅ Completed |
 | P2 | Mobile: Card-based layout on small screens (table wraps poorly at 480px) | `styles.css`, `script.js` | ✅ Completed |
+| P3 | Security: CSRF protection (double-submit cookie pattern) | `middleware/csrf.js`, `app.js`, `utils.js` | ✅ Completed |
 
 ---
 
@@ -136,3 +137,4 @@ When done:
 | Session | DeepSeek | Mobile card layout: table → stacked cards at 640px (data-label on all td, CSS card layout) |
 | Session | DeepSeek | Item notes: DB schema + validation + add form + edit modal + note indicator in table |
 | Session | DeepSeek | Frequent items: GET /api/items/frequent endpoint + clickable chips section |
+| Session | DeepSeek | CSRF protection: double-submit cookie middleware + global fetch override in utils.js |

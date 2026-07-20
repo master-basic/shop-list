@@ -33,7 +33,11 @@ const apiLimiter = rateLimit({
 
 db.initializeDatabase();
 
+const { csrfCookie, csrfProtect } = require('./middleware/csrf');
+
 app.use('/api', apiLimiter);
+app.use('/api', csrfCookie);
+app.use('/api', csrfProtect);
 app.use('/api/items', require('./routes/items'));
 app.use('/api/users', require('./routes/users'));
 app.use('/api', require('./routes/auth'));

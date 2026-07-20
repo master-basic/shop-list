@@ -369,6 +369,18 @@ New file with documented environment variables so new developers know what to co
 - `public/script.js`: `loadFrequentItems()` fetches from `/api/items/frequent`, renders clickable chip badges showing name + frequency count; clicking a chip fills the add form name + category and focuses the name input; called on DOMContentLoaded
 - `public/styles.css`: `.frequent-section` card with `.frequent-chip` pill badges, hover states matching category chip pattern
 
+#### 12. CSRF protection
+- `middleware/csrf.js`: Double-submit cookie pattern — `csrfCookie` sets a non-httpOnly `csrf-token` cookie with `sameSite:strict`; `csrfProtect` rejects POST/PUT/DELETE if `X-CSRF-Token` header doesn't match the cookie
+- `app.js`: Applied `csrfCookie` and `csrfProtect` globally on `/api` routes
+- `public/utils.js`: Overrides `window.fetch` to automatically read the `csrf-token` cookie and attach it as `X-CSRF-Token` header on all non-GET requests — zero changes needed to existing fetch calls
+
+### Future feature work (not assigned)
+- `db.js`: Added `getFrequentItems(limit = 10)` — groups items by name+category, orders by `COUNT(*) DESC`
+- `routes/items.js`: Added `GET /api/items/frequent` endpoint (public, no auth required)
+- `public/index2.html`: Added `.frequent-section` with `.frequent-items` container (hidden until data loaded)
+- `public/script.js`: `loadFrequentItems()` fetches from `/api/items/frequent`, renders clickable chip badges showing name + frequency count; clicking a chip fills the add form name + category and focuses the name input; called on DOMContentLoaded
+- `public/styles.css`: `.frequent-section` card with `.frequent-chip` pill badges, hover states matching category chip pattern
+
 ### Future feature work (not assigned)
 - `script.js`: Added `data-label` attribute to every `<td>` in `fetchItems()` (Item, Date, Bought, Category, Price, Qty, Total, Bought By)
 - `styles.css`: At `640px`, `#shopping-table` transforms from table to stacked cards: thead hidden, each `tr` is a card with border + shadow, each `td` is a labeled row using `::before { content: attr(data-label) }` — scoped to `#shopping-table` so admin/report tables stay as tables
@@ -392,7 +404,6 @@ New file with documented environment variables so new developers know what to co
 
 | Category | Task | Priority |
 |----------|------|----------|
-| Security | CSRF protection | P3 |
 | Data | Multiple shopping lists (schema + UI) | P3 |
 | Data | Sharing lists with permissions | P3 |
 | Data | Spending history charts | P3 |
