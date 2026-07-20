@@ -34,12 +34,12 @@ async function checkAuthentication() {
 function setupEventListeners() {
     const logoutBtn = document.querySelector('.logout-btn');
     if (logoutBtn) {
-        logoutBtn.addEventListener('click', handleLogout);
+        logoutBtn.addEventListener('click', logout);
     }
 }
 
 // Handle logout
-async function handleLogout() {
+async function logout() {
     if (!confirm('Are you sure you want to logout?')) return;
     
     try {
@@ -154,6 +154,40 @@ async function deleteUser(username) {
     } catch (error) {
         console.error('Delete error:', error);
         showToast('Failed to delete user', 'error');
+    }
+}
+
+// Create user
+async function createUser() {
+    const username = document.getElementById('new-username')?.value.trim();
+    const password = document.getElementById('new-password')?.value;
+    const isAdmin = document.getElementById('new-isAdmin')?.checked || false;
+
+    if (!username || !password) {
+        showToast('Username and password are required', 'error');
+        return;
+    }
+
+    try {
+        const response = await fetch('/api/users', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ username, password, isAdmin })
+        });
+
+        if (response.ok) {
+            showToast('User created successfully', 'success');
+            document.getElementById('new-username').value = '';
+            document.getElementById('new-password').value = '';
+            document.getElementById('new-isAdmin').checked = false;
+            await fetchUsers();
+        } else {
+            const data = await response.json();
+            showToast(data.error || 'Failed to create user', 'error');
+        }
+    } catch (error) {
+        console.error('Create user error:', error);
+        showToast('Failed to create user', 'error');
     }
 }
 

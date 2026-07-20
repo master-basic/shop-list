@@ -76,11 +76,11 @@ function showToast(message, type = 'info', duration = 3000) {
     });
 }
 
-// Format currency
+// Format currency (AZN)
 function formatCurrency(amount) {
-    return new Intl.NumberFormat('en-US', {
+    return new Intl.NumberFormat('az-AZ', {
         style: 'currency',
-        currency: 'USD'
+        currency: 'AZN'
     }).format(amount);
 }
 
