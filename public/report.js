@@ -122,8 +122,14 @@ function setPeriodDates() {
 function formatDateInput() {
     const startDateInput = document.getElementById('start-date');
     const endDateInput = document.getElementById('end-date');
-    if (startDateInput) startDateInput.value = formatDate(new Date(startDateInput.value));
-    if (endDateInput) endDateInput.value = formatDate(new Date(endDateInput.value));
+    if (startDateInput && startDateInput.value) {
+        const d = new Date(startDateInput.value);
+        if (!isNaN(d.getTime())) startDateInput.value = formatDate(d);
+    }
+    if (endDateInput && endDateInput.value) {
+        const d = new Date(endDateInput.value);
+        if (!isNaN(d.getTime())) endDateInput.value = formatDate(d);
+    }
 }
 
 // Format date to YYYY-MM-DD

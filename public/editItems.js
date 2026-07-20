@@ -26,26 +26,6 @@ async function checkAuthentication() {
 
 // Setup event listeners
 function setupEventListeners() {
-    // Edit button clicks
-    document.addEventListener('click', (e) => {
-        if (e.target.classList.contains('edit-btn')) {
-            const row = e.target.closest('tr');
-            if (row) {
-                enableEditing(row);
-            }
-        }
-        
-        // Save button clicks
-        if (e.target.classList.contains('save-btn')) {
-            saveChanges(e.target);
-        }
-        
-        // Cancel button clicks
-        if (e.target.classList.contains('cancel-btn')) {
-            cancelEditing(e.target);
-        }
-    });
-    
     // Form submission
     const editForm = document.querySelector('.edit-form');
     if (editForm) {
@@ -102,7 +82,7 @@ function enableEditing(row) {
             
             <div class="form-actions">
                 <button type="submit" class="btn btn-primary">Save Changes</button>
-                <button type="button" class="btn btn-secondary cancel-btn">Cancel</button>
+                <button type="button" class="btn btn-secondary" onclick="closeModal()">Cancel</button>
             </div>
         </div>
     `);
@@ -145,52 +125,10 @@ async function saveFromForm() {
     }
 }
 
-// Save changes from inline editing
-async function saveChanges(button) {
-    const row = button.closest('tr');
-    const itemId = row.dataset.id;
-    const itemName = row.querySelector('[data-field="name"]').value;
-    const itemPrice = parseFloat(row.querySelector('[data-field="price"]').value);
-    const itemQuantity = parseInt(row.querySelector('[data-field="quantity"]').value);
-    
-    const item = {
-        id: itemId,
-        name: itemName,
-        date: row.dataset.date,
-        bought_date: row.dataset.boughtdate || null,
-        category: row.dataset.category || '',
-        price: itemPrice,
-        quantity: itemQuantity
-    };
-    
-    try {
-        const response = await fetch(`/api/items/${itemId}`, {
-            method: 'PUT',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(item)
-        });
-        
-        if (response.ok) {
-            showToast('Item updated successfully', 'success');
-            fetchItems();
-        } else {
-            showToast('Failed to update item', 'error');
-        }
-    } catch (error) {
-        console.error('Update error:', error);
-        showToast('Failed to update item', 'error');
-    }
-}
-
-// Cancel editing
-function cancelEditing(button) {
-    const row = button.closest('tr');
-    if (row) {
-        // Restore original values
-        row.querySelector('[data-field="name"]').value = row.dataset.name;
-        row.querySelector('[data-field="price"]').value = row.dataset.price;
-        row.querySelector('[data-field="quantity"]').value = row.dataset.quantity;
-        row.dataset.category = row.dataset.category;
+// Stop inline editing (just refreshes the list)
+async function cancelEditing(itemId) {
+    if (typeof fetchItems === 'function') {
+        await fetchItems();
     }
     closeModal();
 }

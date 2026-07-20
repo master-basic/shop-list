@@ -45,8 +45,12 @@ async function fetchItems() {
         items.forEach(item => {
             const tr = document.createElement('tr');
             tr.dataset.id = item.id;
+            tr.dataset.name = item.name;
             tr.dataset.date = item.date;
             tr.dataset.boughtdate = item.bought_date || '';
+            tr.dataset.category = item.category || '';
+            tr.dataset.price = item.price;
+            tr.dataset.quantity = item.quantity;
             const itemDate = new Date(item.date).toLocaleString('en-GB', { hour12: false });
             const boughtDate = item.bought_date ? new Date(item.bought_date).toLocaleString('en-GB', { hour12: false }) : '';
             const totalPrice = item.price * item.quantity;
