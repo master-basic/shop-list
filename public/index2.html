@@ -6,94 +6,30 @@
     <title>Shopping List - ShopList</title>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="styles.css">
-    <style>
-        /* Shopping List Page Specific Styles */
-        .shopping-list-page .header {
-            background: var(--primary-color);
-        }
-        .shopping-list-page .header h1 {
-            color: white;
-        }
-        .shopping-list-page .add-item-section {
-            margin-bottom: 24px;
-        }
-        .shopping-list-page .table-container {
-            margin-bottom: 24px;
-        }
-
-        /* Modal styles */
-        .modal {
-            display: none;
-            position: fixed;
-            z-index: 1000;
-            left: 0;
-            top: 0;
-            width: 100%;
-            height: 100%;
-            background: rgba(0,0,0,0.5);
-            align-items: center;
-            justify-content: center;
-        }
-        .modal.show {
-            display: flex;
-        }
-        .modal-content {
-            background: var(--background, #fff);
-            border-radius: 12px;
-            padding: 24px;
-            max-width: 500px;
-            width: 90%;
-            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
-            max-height: 90vh;
-            overflow-y: auto;
-        }
-        .modal-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 16px;
-        }
-        .modal-title {
-            font-size: 1.25rem;
-            font-weight: 600;
-        }
-        .modal-close {
-            font-size: 1.5rem;
-            cursor: pointer;
-            opacity: 0.7;
-        }
-        .modal-close:hover {
-            opacity: 1;
-        }
-    </style>
 </head>
 <body>
     <div class="container">
-        <!-- Header -->
         <header class="header">
             <div class="header-left">
-                <h1>🛒 Shopping List</h1>
+                <h1>Shopping List</h1>
                 <h2 id="month-name"></h2>
             </div>
             <nav class="header-nav">
-                <a href="login.html" class="nav-link">🔐 Login</a>
-                <a href="report.html" class="nav-link">📊 Report</a>
-                <a href="admin.html" class="nav-link">⚙️ Admin</a>
+                <a href="login.html" class="nav-link">Login</a>
+                <a href="report.html" class="nav-link">Report</a>
+                <a href="admin.html" class="nav-link">Admin</a>
             </nav>
             <div class="header-right">
-                <button class="theme-toggle" onclick="toggleTheme()" title="Toggle Dark Mode">
-                    🌙
-                </button>
+                <button class="theme-toggle" onclick="toggleTheme()" title="Toggle theme"></button>
             </div>
         </header>
 
-        <!-- Add Item Section -->
-        <section class="add-item-section">
+        <section class="section add-item-section">
             <h3>Add New Item</h3>
             <div class="input-container">
                 <div class="input-group">
                     <label for="item-name">Item Name</label>
-                    <div class="autocomplete" style="width: 100%;">
+                    <div class="autocomplete">
                         <input type="text" id="item-name" placeholder="e.g., Milk" oninput="autocomplete()">
                         <div id="autocomplete-list"></div>
                     </div>
@@ -102,17 +38,17 @@
                     <label for="item-category">Category</label>
                     <select id="item-category">
                         <option value="">All Categories</option>
-                        <option value="Groceries">🥦 Groceries</option>
-                        <option value="Dairy">🥛 Dairy</option>
-                        <option value="Meat">🥩 Meat</option>
-                        <option value="Produce">🍎 Produce</option>
-                        <option value="Bakery">🥐 Bakery</option>
-                        <option value="Household">🏠 Household</option>
-                        <option value="Personal Care">🧴 Personal Care</option>
+                        <option value="Groceries">Groceries</option>
+                        <option value="Dairy">Dairy</option>
+                        <option value="Meat">Meat</option>
+                        <option value="Produce">Produce</option>
+                        <option value="Bakery">Bakery</option>
+                        <option value="Household">Household</option>
+                        <option value="Personal Care">Personal Care</option>
                     </select>
                 </div>
                 <div class="input-group">
-                    <label for="item-price">Price</label>
+                    <label for="item-price">Price (AZN)</label>
                     <input type="number" id="item-price" placeholder="0.00" step="0.01" min="0">
                 </div>
                 <div class="input-group">
@@ -123,26 +59,24 @@
             </div>
         </section>
 
-        <!-- Filter Section -->
-        <section class="filter-section">
+        <div class="filter-section">
             <div class="category-filter" id="category-filter">
                 <span class="category-chip active" data-category="">All Items</span>
-                <span class="category-chip" data-category="Groceries">🥦 Groceries</span>
-                <span class="category-chip" data-category="Dairy">🥛 Dairy</span>
-                <span class="category-chip" data-category="Meat">🥩 Meat</span>
-                <span class="category-chip" data-category="Produce">🍎 Produce</span>
-                <span class="category-chip" data-category="Bakery">🥐 Bakery</span>
-                <span class="category-chip" data-category="Household">🏠 Household</span>
-                <span class="category-chip" data-category="Personal Care">🧴 Personal Care</span>
+                <span class="category-chip" data-category="Groceries">Groceries</span>
+                <span class="category-chip" data-category="Dairy">Dairy</span>
+                <span class="category-chip" data-category="Meat">Meat</span>
+                <span class="category-chip" data-category="Produce">Produce</span>
+                <span class="category-chip" data-category="Bakery">Bakery</span>
+                <span class="category-chip" data-category="Household">Household</span>
+                <span class="category-chip" data-category="Personal Care">Personal Care</span>
             </div>
             <div class="filter-buttons">
                 <button class="button button-secondary" onclick="showBoughtItems(event)">Bought</button>
                 <button class="button button-secondary" onclick="showNotBoughtItems(event)">Not Bought</button>
                 <button class="button button-secondary" onclick="showArchivedItems(event)">Archived</button>
             </div>
-        </section>
+        </div>
 
-        <!-- Shopping List Table -->
         <div class="table-container">
             <table id="shopping-table">
                 <thead>
@@ -152,7 +86,7 @@
                         <th>Bought Date</th>
                         <th>Category</th>
                         <th>Price</th>
-                        <th>Quantity</th>
+                        <th>Qty</th>
                         <th>Total</th>
                         <th>Bought By</th>
                         <th>Actions</th>
@@ -162,26 +96,23 @@
             </table>
         </div>
 
-        <!-- Total Section -->
         <div class="total-section">
-            <span>📊 Total Items: <strong id="total-items">0</strong></span>
-            <span>💰 Total Amount: <strong id="total-amount">AZN 0.00</strong></span>
-            <span>✅ Purchased: <strong id="purchased-count">0</strong></span>
+            <span>Total Items: <strong id="total-items">0</strong></span>
+            <span>Total Amount: <strong id="total-amount">AZN 0.00</strong></span>
+            <span>Purchased: <strong id="purchased-count">0</strong></span>
         </div>
     </div>
 
-    <!-- Edit Modal -->
     <div id="edit-modal" class="modal">
         <div class="modal-content">
             <div class="modal-header">
                 <h3 class="modal-title">Edit Item</h3>
-                <span class="modal-close" onclick="closeModal()">&times;</span>
+                <button class="modal-close" onclick="closeModal()">&times;</button>
             </div>
             <div class="modal-body"></div>
         </div>
     </div>
 
-    <!-- Toast Container -->
     <div class="toast-container" id="toast-container"></div>
 
     <script src="config.js"></script>

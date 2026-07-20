@@ -14,11 +14,6 @@ document.getElementById('month-name').textContent = getMonthName();
 // Toast notification system - removed duplicate, using utils.js
 // Import showToast from utils.js
 
-// Initialize category filter chips
-let isDarkMode = false;
-
-// Initialize theme
-initTheme();
 async function fetchItems() {
     try {
         const response = await fetch('/api/items');

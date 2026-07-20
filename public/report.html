@@ -10,18 +10,18 @@
 <body>
     <div class="container">
         <header class="report-header">
-            <h1 class="page-header">Report</h1>
+            <h1>Report</h1>
             <nav class="report-nav">
-                <a href="index2.html" class="nav-link">🛒 Shopping List</a>
-                <a href="login.html" class="nav-link">🔐 Login</a>
-                <a href="admin.html" class="nav-link">⚙️ Admin</a>
+                <a href="index2.html" class="nav-link">Shopping List</a>
+                <a href="login.html" class="nav-link">Login</a>
+                <a href="admin.html" class="nav-link">Admin</a>
             </nav>
         </header>
         
-        <div class="filter-section">
+        <div class="section">
             <div class="filter-row">
                 <div class="filter-group">
-                    <label for="start-date">Start Date:</label>
+                    <label for="start-date">Start Date</label>
                     <div class="date-picker">
                         <select id="start-period" class="period-select">
                             <option value="month">This Month</option>
@@ -34,7 +34,7 @@
                     </div>
                 </div>
                 <div class="filter-group">
-                    <label for="end-date">End Date:</label>
+                    <label for="end-date">End Date</label>
                     <div class="date-picker">
                         <select id="end-period" class="period-select">
                             <option value="month">This Month</option>
@@ -50,25 +50,27 @@
             </div>
         </div>
 
-        <table id="report-table">
-            <thead>
-                <tr>
-                    <th>Name</th>
-                    <th>Date Added</th>
-                    <th>Bought Date</th>
-                    <th>Category</th>
-                    <th>Price</th>
-                    <th>Quantity</th>
-                    <th>Total</th>
-                    <th>Bought By</th>
-                    <th>Actions</th>
-                </tr>
-            </thead>
-            <tbody id="report-list"></tbody>
-        </table>
+        <div class="table-container">
+            <table id="report-table">
+                <thead>
+                    <tr>
+                        <th>Name</th>
+                        <th>Date Added</th>
+                        <th>Bought Date</th>
+                        <th>Category</th>
+                        <th>Price</th>
+                        <th>Qty</th>
+                        <th>Total</th>
+                        <th>Bought By</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody id="report-list"></tbody>
+            </table>
+        </div>
         
         <div class="total-section">
-            <div class="total-label">Total Amount:</div>
+            <div class="total-label">Total Amount</div>
             <div class="total-amount" id="report-total">AZN 0.00</div>
         </div>
 
