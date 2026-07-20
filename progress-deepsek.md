@@ -379,6 +379,19 @@ New file with documented environment variables so new developers know what to co
 - `public/report.js`: `renderSpendingChart(items)` aggregates item totals by `YYYY-MM` (using bought_date or date), renders a Chart.js bar chart with teal bars; theme-aware colors (detects `data-theme`); `spendingChart` instance is reused/destroyed on re-render; called from `generateReport()`
 - `public/styles.css`: `.chart-section` card matching buyer-summary style, `.chart-container` with 280px height
 
+#### 14. Migration system (versioned migrations)
+
+- `migrations/001-add-notes-column.js`: First migration — adds `notes TEXT` column if not present (safe for existing databases)
+- `db.js`: Added `migrations` table to both `createTable()` and `initializeDatabase()`; added `runMigrationsForConn(conn)` — reads `migrations/*.js`, checks `migrations` table, runs pending migrations in order; called automatically during `initializeDatabase()` on app startup
+- `migrate.js`: Standalone CLI runner — same logic, usable via `npm run migrate`
+- `package.json`: Added `"migrate": "node migrate.js"` script
+- Removed all inline `ALTER TABLE` statements from `createTable()` and `initializeDatabase()` — schema changes now go through the migration system
+
+### No remaining P2-P3 tasks — all 14 features completed
+- `public/report.html`: Added Chart.js 4 CDN, chart section with `<canvas id="spending-chart">` after buyer summary
+- `public/report.js`: `renderSpendingChart(items)` aggregates item totals by `YYYY-MM` (using bought_date or date), renders a Chart.js bar chart with teal bars; theme-aware colors (detects `data-theme`); `spendingChart` instance is reused/destroyed on re-render; called from `generateReport()`
+- `public/styles.css`: `.chart-section` card matching buyer-summary style, `.chart-container` with 280px height
+
 ### Future feature work (not assigned)
 - `middleware/csrf.js`: Double-submit cookie pattern — `csrfCookie` sets a non-httpOnly `csrf-token` cookie with `sameSite:strict`; `csrfProtect` rejects POST/PUT/DELETE if `X-CSRF-Token` header doesn't match the cookie
 - `app.js`: Applied `csrfCookie` and `csrfProtect` globally on `/api` routes
@@ -410,10 +423,6 @@ New file with documented environment variables so new developers know what to co
 
 ## What's still pending
 
-### Future feature work (not assigned)
+### All planned features completed ✅
 
-| Category | Task | Priority |
-|----------|------|----------|
-| Data | Multiple shopping lists (schema + UI) | P3 |
-| Data | Sharing lists with permissions | P3 |
-| Infra | Migration system (db-migrate) | P3 |
+Every task from the original backlog is now implemented. The only remaining ideas are new feature requests beyond the original scope.

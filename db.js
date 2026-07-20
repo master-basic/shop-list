@@ -36,11 +36,6 @@ async function createTable() {
             ) ENGINE=InnoDB
         `);
 
-        // Add notes column if missing (for existing databases)
-        try {
-            await conn.query(`ALTER TABLE items ADD COLUMN notes TEXT DEFAULT NULL`);
-        } catch (_) { /* column already exists */ }
-
         await conn.query(`CREATE TABLE IF NOT EXISTS users (
             username VARCHAR(255) PRIMARY KEY,
             password VARCHAR(255) NOT NULL,
@@ -48,8 +43,36 @@ async function createTable() {
             created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
             updated_at DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
         )`);
+
+        await conn.query(`CREATE TABLE IF NOT EXISTS migrations (
+            name VARCHAR(255) PRIMARY KEY,
+            applied_at DATETIME DEFAULT CURRENT_TIMESTAMP
+        )`);
     } finally {
         if (conn) conn.release();
+    }
+}
+
+// Run pending migrations
+async function runMigrationsForConn(conn) {
+    const fs = require('fs');
+    const path = require('path');
+    const migrationsDir = path.join(__dirname, 'migrations');
+    if (!fs.existsSync(migrationsDir)) return;
+
+    const files = fs.readdirSync(migrationsDir)
+        .filter(f => f.endsWith('.js'))
+        .sort();
+
+    for (const file of files) {
+        const migration = require(path.join(migrationsDir, file));
+        const alreadyRun = await conn.query('SELECT name FROM migrations WHERE name = ?', [migration.name]);
+        if (alreadyRun.length > 0) continue;
+
+        console.log(`Running migration: ${migration.name}`);
+        await migration.up(conn);
+        await conn.query('INSERT INTO migrations (name) VALUES (?)', [migration.name]);
+        console.log(`Migration applied: ${migration.name}`);
     }
 }
 
@@ -81,11 +104,6 @@ async function initializeDatabase() {
             ) ENGINE=InnoDB
         `);
 
-        // Add notes column if missing (for existing databases)
-        try {
-            await conn.query(`ALTER TABLE items ADD COLUMN notes TEXT DEFAULT NULL`);
-        } catch (_) { /* column already exists */ }
-
         await conn.query(`CREATE TABLE IF NOT EXISTS users (
             username VARCHAR(255) PRIMARY KEY,
             password VARCHAR(255) NOT NULL,
@@ -93,6 +111,14 @@ async function initializeDatabase() {
             created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
             updated_at DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
         )`);
+
+        await conn.query(`CREATE TABLE IF NOT EXISTS migrations (
+            name VARCHAR(255) PRIMARY KEY,
+            applied_at DATETIME DEFAULT CURRENT_TIMESTAMP
+        )`);
+
+        // Run pending migrations
+        await runMigrationsForConn(conn);
 
         // Create admin and regular users if they don't exist
         const hashedAdminPassword = await bcrypt.hash('admin123', 10);
@@ -476,5 +502,6 @@ module.exports = {
     getUserByUsername,
     updateItem,
     getItemById,
-    getFrequentItems
+    getFrequentItems,
+    runMigrationsForConn
 };

@@ -5,7 +5,8 @@
   "scripts": {
     "dev": "nodemon app.js",
     "start": "node app.js",
-    "init-db": "node init-db.js"
+    "init-db": "node init-db.js",
+    "migrate": "node migrate.js"
   },
   "keywords": [],
   "author": "shop-list",

@@ -87,6 +87,7 @@ D:\Repos\shop-list\
 | P2 | Mobile: Card-based layout on small screens (table wraps poorly at 480px) | `styles.css`, `script.js` | ✅ Completed |
 | P3 | Security: CSRF protection (double-submit cookie pattern) | `middleware/csrf.js`, `app.js`, `utils.js` | ✅ Completed |
 | P3 | Data: Spending history charts (Chart.js bar chart on report page) | `report.html`, `report.js`, `styles.css` | ✅ Completed |
+| P3 | Infra: Migration system (db-migrate) | `migrations/`, `db.js`, `migrate.js`, `package.json` | ✅ Completed |
 
 ---
 
@@ -140,3 +141,4 @@ When done:
 | Session | DeepSeek | Frequent items: GET /api/items/frequent endpoint + clickable chips section |
 | Session | DeepSeek | CSRF protection: double-submit cookie middleware + global fetch override in utils.js |
 | Session | DeepSeek | Spending history chart: Chart.js bar chart on report page, monthly aggregation |
+| Session | DeepSeek | Migration system: versioned migrations (migrations/ dir, migration table, CLI + auto-run) |
