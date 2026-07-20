@@ -1239,6 +1239,22 @@ th.sortable.desc:hover::after {
   border-top-color: var(--primary);
 }
 
+/* ===== PRINT STYLESHEET ===== */
+@media print {
+  body { background: white; color: black; padding: 0; }
+  .header nav, .header-right, .filter-section, .add-item-section,
+  .theme-toggle, .action-button, .archive-button, .edit-button, .bought-button,
+  .export-btn, .logout-btn, .admin-nav, .report-nav, .back-btn,
+  .modal, .toast-container, .loading-overlay, .search-container,
+  .create-user-section, .admin-create-user-section, .form-row, .admin-form-row,
+  .filter-row, .report-filter-row, .button, .button-secondary { display: none !important; }
+  .container { max-width: 100%; margin: 0; padding: 0; }
+  .header { border: none; background: none; padding: 0 0 12px 0; }
+  table { font-size: 11px; border: 1px solid #ccc; }
+  th, td { padding: 6px 8px; border: 1px solid #ccc; }
+  .total-section { border: 1px solid #ccc; padding: 12px; margin-top: 12px; }
+}
+
 /* ===== RESPONSIVE ===== */
 @media (max-width: 768px) {
   body { padding: 12px; }
