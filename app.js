@@ -129,14 +129,26 @@ app.post('/api/items', requireAuth, async (req, res) => {
     }
 });
 
-// Route to mark an item as bought
+// Route to mark an item as bought (or toggle if already bought)
 app.put('/api/items/:id/bought', requireAuth, async (req, res) => {
     try {
         const itemId = req.params.id;
-        await db.markAsBought(itemId, req.username);
-        res.json({ id: itemId, bought: true, bought_by: req.username });
+        const item = await db.getItemById(itemId);
+
+        if (!item) {
+            return res.status(404).json({ error: 'Item not found' });
+        }
+
+        // Toggle: if already bought, un-buy; otherwise mark as bought
+        if (item.bought_date) {
+            await db.unbuyItem(itemId);
+            res.json({ id: itemId, bought: false, bought_by: null });
+        } else {
+            await db.markAsBought(itemId, req.username);
+            res.json({ id: itemId, bought: true, bought_by: req.username });
+        }
     } catch (error) {
-        console.error('Error marking item as bought:', error);
+        console.error('Error toggling bought status:', error);
         res.status(500).json({ error: 'Internal server error' });
     }
 });

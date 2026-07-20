@@ -206,6 +206,18 @@ async function markAsBought(itemId, username) {
     }
 }
 
+// Un-buy an item (clear bought status)
+async function unbuyItem(itemId) {
+    let conn;
+    try {
+        conn = await pool.getConnection();
+        const query = `UPDATE items SET bought_date = NULL, bought_by = NULL WHERE id = ?`;
+        await conn.query(query, [itemId]);
+    } finally {
+        if (conn) conn.release();
+    }
+}
+
 // Archive an item
 async function archiveItem(itemId) {
     let conn;
@@ -380,6 +392,7 @@ module.exports = {
     getFilteredItems,
     addItem,
     markAsBought,
+    unbuyItem,
     archiveItem,
     authenticateUser,
     createUser,

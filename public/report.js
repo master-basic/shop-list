@@ -80,33 +80,35 @@ function setPeriodDates() {
     
     if (!startDateInput || !endDateInput || !startPeriod || !endPeriod) return;
     
-    const now = new Date();
+    const today = new Date();
     let startDate, endDate;
     
     // Start date based on start period
-    if (startPeriod.value === 'month') {
-        startDate = new Date(now.getFullYear(), now.getMonth(), 1);
-    } else if (startPeriod.value === 'week') {
-        startDate = new Date(now.setDate(now.getDate() - 7));
-    } else if (startPeriod.value === 'year') {
-        startDate = new Date(now.getFullYear(), 0, 1);
-    } else if (startPeriod.value === 'day') {
-        startDate = now;
+    const periodStart = startPeriod.value;
+    if (periodStart === 'month') {
+        startDate = new Date(today.getFullYear(), today.getMonth(), 1);
+    } else if (periodStart === 'week') {
+        startDate = new Date(today);
+        startDate.setDate(today.getDate() - 7);
+    } else if (periodStart === 'year') {
+        startDate = new Date(today.getFullYear(), 0, 1);
     } else {
-        startDate = now;
+        startDate = new Date(today);
     }
     
-    // End date based on end period
-    if (endPeriod.value === 'month') {
-        endDate = new Date(now.getFullYear(), now.getMonth() + 1, 0);
-    } else if (endPeriod.value === 'week') {
-        endDate = now;
-    } else if (endPeriod.value === 'day') {
-        endDate = new Date(now.setDate(now.getDate() + 30));
-    } else if (endPeriod.value === 'year') {
-        endDate = new Date(now.getFullYear() + 1, 0, 1);
+    // End date based on end period (use fresh date objects to avoid mutation)
+    const periodEnd = endPeriod.value;
+    if (periodEnd === 'month') {
+        endDate = new Date(today.getFullYear(), today.getMonth() + 1, 0);
+    } else if (periodEnd === 'week') {
+        endDate = new Date(today);
+    } else if (periodEnd === 'day') {
+        endDate = new Date(today);
+        endDate.setDate(today.getDate() + 30);
+    } else if (periodEnd === 'year') {
+        endDate = new Date(today.getFullYear() + 1, 0, 1);
     } else {
-        endDate = now;
+        endDate = new Date(today);
     }
     
     startDateInput.value = formatDate(startDate);
@@ -169,6 +171,8 @@ function renderReportTable(items) {
     
     items.forEach(item => {
         const tr = document.createElement('tr');
+        tr.dataset.id = item.id;
+        const isBought = !!item.bought_date;
         tr.innerHTML = `
             <td>${item.name}</td>
             <td>${formatDate(item.date)}</td>
@@ -179,7 +183,7 @@ function renderReportTable(items) {
             <td>${formatCurrency(item.price * item.quantity)}</td>
             <td>${item.bought_by || '-'}</td>
             <td class="actions">
-                <button class="action-button bought-button" onclick="toggleBought(this)">Bought</button>
+                <button class="action-button ${isBought ? 'bought-button bought' : 'bought-button'}" onclick="toggleBought(this)">${isBought ? 'Bought' : 'Not Bought'}</button>
                 <button class="action-button delete-button" onclick="deleteItem('${item.id}')">Delete</button>
             </td>
         `;
@@ -248,9 +252,13 @@ async function toggleBought(button) {
         });
 
         if (response.ok) {
-            button.classList.toggle('bought');
-            button.textContent = button.classList.contains('bought') ? 'Bought' : 'Not Bought';
-            showToast(itemName + ' marked as ' + (button.classList.contains('bought') ? 'bought' : 'not bought'), 'success');
+            const data = await response.json();
+            const isBought = data.bought;
+            button.classList.toggle('bought', isBought);
+            button.textContent = isBought ? 'Bought' : 'Not Bought';
+            showToast(`${itemName} marked as ${isBought ? 'bought' : 'not bought'}`, 'success');
+        } else {
+            showToast('Failed to update status', 'error');
         }
     } catch (error) {
         console.error('Error toggling bought status:', error);
