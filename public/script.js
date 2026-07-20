@@ -17,32 +17,8 @@ document.getElementById('month-name').textContent = getMonthName();
 // Initialize category filter chips
 let isDarkMode = false;
 
-function toggleTheme() {
-    isDarkMode = !isDarkMode;
-    document.documentElement.setAttribute('data-theme', isDarkMode ? 'dark' : 'light');
-    showToast(isDarkMode ? 'Dark mode enabled' : 'Light mode enabled', 'info');
-}
-
-function initTheme() {
-    const savedTheme = localStorage.getItem('theme');
-    if (savedTheme === 'dark' || (!savedTheme && window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
-        isDarkMode = true;
-        document.documentElement.setAttribute('data-theme', 'dark');
-    }
-}
-
-function setTheme(theme) {
-    localStorage.setItem('theme', theme);
-    if (theme === 'dark') {
-        isDarkMode = true;
-        document.documentElement.setAttribute('data-theme', 'dark');
-    } else {
-        isDarkMode = false;
-        document.documentElement.setAttribute('data-theme', 'light');
-    }
-}
-
-// Function to fetch items from the server and display them in the table
+// Initialize theme
+initTheme();
 async function fetchItems() {
     try {
         const response = await fetch('/api/items');
@@ -424,10 +400,10 @@ async function logout() {
 }
 
 // Function to show bought items
-async function showBoughtItems() {
+async function showBoughtItems(event) {
     const buttons = document.querySelectorAll('.filter-buttons button');
     buttons.forEach(btn => btn.classList.remove('active'));
-    event.target.classList.add('active');
+    (event.target || event.srcElement).classList.add('active');
     
     const activeCategory = document.querySelector('.category-chip.active')?.dataset.category || '';
     try {
@@ -470,10 +446,10 @@ async function showBoughtItems() {
 }
 
 // Function to show not bought items
-async function showNotBoughtItems() {
+async function showNotBoughtItems(event) {
     const buttons = document.querySelectorAll('.filter-buttons button');
     buttons.forEach(btn => btn.classList.remove('active'));
-    event.target.classList.add('active');
+    (event.target || event.srcElement).classList.add('active');
     
     const activeCategory = document.querySelector('.category-chip.active')?.dataset.category || '';
     try {
@@ -517,10 +493,10 @@ async function showNotBoughtItems() {
 }
 
 // Function to show archived items
-async function showArchivedItems() {
+async function showArchivedItems(event) {
     const buttons = document.querySelectorAll('.filter-buttons button');
     buttons.forEach(btn => btn.classList.remove('active'));
-    event.target.classList.add('active');
+    (event.target || event.srcElement).classList.add('active');
     
     const activeCategory = document.querySelector('.category-chip.active')?.dataset.category || '';
     try {

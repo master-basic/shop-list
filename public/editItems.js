@@ -199,8 +199,10 @@ function cancelEditing(button) {
 function showModal(title, content) {
     const modal = document.getElementById('edit-modal');
     if (modal) {
-        modal.querySelector('.modal-title').textContent = title;
-        modal.querySelector('.modal-content').innerHTML = content;
+        const titleEl = modal.querySelector('.modal-title');
+        const bodyEl = modal.querySelector('.modal-body');
+        if (titleEl) titleEl.textContent = title;
+        if (bodyEl) bodyEl.innerHTML = content;
         modal.classList.add('show');
     }
 }
