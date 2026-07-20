@@ -51,6 +51,9 @@ D:\Repos\shop-list\
 | P1 | Add un-archive endpoint + db function | `app.js`, `db.js`, `script.js` | ✅ Completed |
 | P1 | Add Helmet security headers middleware | `app.js`, `package.json` | ✅ Completed |
 | P2 | Split app.js into routes/middleware layers | `routes/`, `middleware/`, `app.js` | ✅ Completed |
+| P3 | Add Joi input validation on all POST/PUT endpoints | `middleware/validate.js`, routes | ✅ Completed |
+| P3 | Add rate limiting on all mutation endpoints (200 req/15min) | `app.js` | ✅ Completed |
+| P3 | Add CSV export endpoint + download button | `routes/items.js`, `index2.html`, `script.js` | ✅ Completed |
 
 ### Qwen Tasks (frontend, UX, polish)
 
