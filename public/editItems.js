@@ -1,24 +1,6 @@
 // Edit items functionality
 let currentUser = null;
 
-// Browser-compatible utils
-const utils = {
-    showToast: function(message, type = 'info', duration = 3000) {
-        const container = document.getElementById('toast-container');
-        if (!container) return;
-        
-        const toast = document.createElement('div');
-        toast.className = `toast ${type}`;
-        toast.textContent = message;
-        container.appendChild(toast);
-        
-        setTimeout(() => {
-            toast.style.opacity = '0';
-            setTimeout(() => toast.remove(), 300);
-        }, 3000);
-    }
-};
-
 // Initialize the page
 async function init() {
     await checkAuthentication();
@@ -30,14 +12,14 @@ async function checkAuthentication() {
     try {
         const response = await fetch('/api/current-user');
         if (!response.ok) {
-            utils.showToast('Please login first', 'error');
+            showToast('Please login first', 'error');
             window.location.href = '/login.html';
             return;
         }
         currentUser = await response.json();
     } catch (error) {
         console.error('Auth check error:', error);
-        utils.showToast('Authentication failed', 'error');
+        showToast('Authentication failed', 'error');
         window.location.href = '/login.html';
     }
 }
@@ -150,7 +132,7 @@ async function saveFromForm() {
         });
         
         if (response.ok) {
-            utils.showToast('Item updated successfully', 'success');
+            showToast('Item updated successfully', 'success');
             closeModal();
             fetchItems();
         } else {
@@ -159,7 +141,7 @@ async function saveFromForm() {
         }
     } catch (error) {
         console.error('Update error:', error);
-        utils.showToast('Failed to update item', 'error');
+        showToast('Failed to update item', 'error');
     }
 }
 
@@ -189,14 +171,14 @@ async function saveChanges(button) {
         });
         
         if (response.ok) {
-            utils.showToast('Item updated successfully', 'success');
+            showToast('Item updated successfully', 'success');
             fetchItems();
         } else {
-            utils.showToast('Failed to update item', 'error');
+            showToast('Failed to update item', 'error');
         }
     } catch (error) {
         console.error('Update error:', error);
-        utils.showToast('Failed to update item', 'error');
+        showToast('Failed to update item', 'error');
     }
 }
 

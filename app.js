@@ -1,15 +1,13 @@
-require('dotenv').config(); // Load environment variables from .env file
-const express = require('express'); // Import the express module
-const bodyParser = require('body-parser'); // Import the body-parser module
-const path = require('path'); // Import the path module
-const cookieParser = require('cookie-parser'); // Import the cookie-parser module
-const morgan = require('morgan'); // Import the morgan module
-const fs = require('fs'); // Import the fs module
-const db = require('./db'); // Import the db module
-const moment = require('moment'); // Import moment library
+require('dotenv').config();
+const express = require('express');
+const path = require('path');
+const cookieParser = require('cookie-parser');
+const morgan = require('morgan');
+const fs = require('fs');
+const db = require('./db');
 
-const app = express(); // Create an express application
-const PORT = process.env.PORT || 3000; // Set the port to 3000 or the value from the environment variable
+const app = express();
+const PORT = process.env.PORT || 3000;
 
 // Create a write stream (in append mode)
 const accessLogStream = fs.createWriteStream(path.join(__dirname, 'log.txt'), { flags: 'a' });
@@ -17,77 +15,61 @@ const accessLogStream = fs.createWriteStream(path.join(__dirname, 'log.txt'), { 
 // Setup the logger
 app.use(morgan('combined', { stream: accessLogStream }));
 
-app.use(bodyParser.json()); // Use body-parser middleware to parse JSON requests
-app.use(cookieParser()); // Use cookie-parser middleware to parse cookies
-app.use(express.static('public')); // Serve static files from the 'public' directory
+app.use(express.json());
+app.use(cookieParser());
+app.use(express.static('public'));
 
 // Initialize the database when the server starts
 db.initializeDatabase();
 
-// Function to format date to SQL datetime format using moment.js
-function formatDateToSQL(datetime) {
-    if (!datetime) return null;
-    
-    // Try to parse as YYYY-MM-DD format first (for text input)
-    if (typeof datetime === 'string' && datetime.match(/^\d{4}-\d{2}-\d{2}$/)) {
-        const [year, month, day] = datetime.split('-').map(Number);
-        const date = new Date(year, month - 1, day);
-        if (!isNaN(date.getTime())) {
-            return date.toLocaleString('en-US', { 
-                timeZone: 'UTC',
-                year: 'numeric', 
-                month: '2-digit', 
-                day: '2-digit',
-                hour: '2-digit', 
-                minute: '2-digit', 
-                second: '2-digit'
-            }).replace(/\//g, '-').replace(',', '').replace(':', ':');
+// Middleware to require authentication
+function requireAuth(req, res, next) {
+    const username = req.cookies.username;
+    if (!username) {
+        return res.status(401).json({ error: 'Not authenticated' });
+    }
+    req.username = username;
+    next();
+}
+
+// Middleware to require admin privileges
+async function requireAdmin(req, res, next) {
+    const username = req.cookies.username;
+    if (!username) {
+        return res.status(401).json({ error: 'Not authenticated' });
+    }
+    try {
+        const user = await db.getUserByUsername(username);
+        if (!user || !user.isAdmin) {
+            return res.status(403).json({ error: 'Admin access required' });
         }
+        req.username = username;
+        next();
+    } catch (error) {
+        console.error('Auth check error:', error);
+        res.status(500).json({ error: 'Internal server error' });
     }
-    
-    // Try to parse as ISO datetime format
-    const parsed = moment(datetime);
-    if (!parsed.isValid()) {
-        throw new Error('Invalid date format');
-    }
-    return parsed.format('YYYY-MM-DD HH:mm:ss');
 }
 
 // Route to get the shopping list
 app.get('/api/items', async (req, res) => {
-    const includeArchived = req.query.includeArchived === 'true'; // Check if archived items should be included
-    const items = await db.getItems(includeArchived); // Get all items, optionally including archived items
-    res.json(items); // Send the items as a JSON response
+    try {
+        const includeArchived = req.query.includeArchived === 'true';
+        const items = await db.getItems(includeArchived);
+        res.json(items);
+    } catch (error) {
+        console.error('Error fetching items:', error);
+        res.status(500).json({ error: 'Internal server error' });
+    }
 });
 
 // Route to get items with date range and category filters
 app.get('/api/items/filter', async (req, res) => {
     try {
         const includeArchived = req.query.includeArchived === 'true';
-        
-        let query = includeArchived ?
-            "SELECT id, name, date, bought_date, category, price, quantity, bought_by, created_by FROM items" :
-            "SELECT id, name, date, bought_date, category, price, quantity, bought_by, created_by FROM items WHERE archived = 0";
-        
-        const params = [];
-        
-        if (req.query.startDate) {
-            query += " AND date >= ?";
-            params.push(req.query.startDate);
-        }
-        
-        if (req.query.endDate) {
-            query += " AND date <= ?";
-            params.push(req.query.endDate);
-        }
-        
-        if (req.query.category && req.query.category !== 'all') {
-            query += " AND category = ?";
-            params.push(req.query.category);
-        }
-        
-        const rows = await db.getItems(includeArchived); // Note: getItems doesn't support filters yet
-        // For now, return all items and let frontend filter
+        const { startDate, endDate, category } = req.query;
+
+        const rows = await db.getFilteredItems(startDate, endDate, category, includeArchived);
         res.json(rows);
     } catch (error) {
         console.error('Error filtering items:', error);
@@ -96,41 +78,31 @@ app.get('/api/items/filter', async (req, res) => {
 });
 
 // Route to add a new item to the list
-app.post('/api/items', async (req, res) => {
+app.post('/api/items', requireAuth, async (req, res) => {
     try {
-        console.log('Received request body:', req.body);
-
         const { name, price, quantity, date, category } = req.body;
-        
+
         if (!name || name.trim() === '') {
             return res.status(400).json({ error: 'Item name is required' });
-        }
-
-        const username = req.cookies.username;
-        if (!username) {
-            return res.status(401).json({ error: 'Not authenticated' });
         }
 
         // Use current time as the item creation date in SQL format
         const newItem = {
             name: name.trim(),
-            date: formatDateToSQL(new Date()),
-            bought_date: null, // Initialize as null (item not yet bought)
+            date: new Date().toISOString().slice(0, 19).replace('T', ' '),
+            bought_date: null,
             category: category || null,
             price: parseFloat(price) || 0.00,
             quantity: parseInt(quantity) || 1,
-            created_by: username
+            created_by: req.username
         };
 
-        console.log('Creating item:', newItem);
-
         const addedItem = await db.addItem(newItem);
-        
+
         if (!addedItem) {
             return res.status(500).json({ error: 'Failed to create item' });
         }
 
-        console.log('Created item:', addedItem);
         res.status(201).json({
             success: true,
             item: addedItem
@@ -147,30 +119,39 @@ app.post('/api/items', async (req, res) => {
 });
 
 // Route to mark an item as bought
-app.put('/api/items/:id/bought', async (req, res) => {
-    const itemId = req.params.id; // Get the item ID from the request parameters
-    const username = req.cookies.username; // Get the username from the cookies
-    await db.markAsBought(itemId, username); // Mark the item as bought in the database
-    res.json({ id: itemId, bought: true, bought_by: username }); // Send a JSON response indicating the item was marked as bought
-});
-
-// Add this new route after the route for marking an item as bought
-app.put('/api/items/:id', async (req, res) => {
+app.put('/api/items/:id/bought', requireAuth, async (req, res) => {
     try {
         const itemId = req.params.id;
-        const { name, date, bought_date, price, quantity, category } = req.body;
-        // Convert date fields to proper SQL format
-        const formattedDate = formatDateToSQL(new Date(date));
-        const formattedBoughtDate = bought_date ? formatDateToSQL(new Date(bought_date)) : null;
+        await db.markAsBought(itemId, req.username);
+        res.json({ id: itemId, bought: true, bought_by: req.username });
+    } catch (error) {
+        console.error('Error marking item as bought:', error);
+        res.status(500).json({ error: 'Internal server error' });
+    }
+});
+
+// Route to update an item (supports partial updates)
+app.put('/api/items/:id', requireAuth, async (req, res) => {
+    try {
+        const itemId = req.params.id;
+
+        // Fetch current item to allow partial updates
+        const currentItem = await db.getItemById(itemId);
+        if (!currentItem) {
+            return res.status(404).json({ error: 'Item not found' });
+        }
+
+        // Merge provided fields with current values
         const updatedItem = {
             id: itemId,
-            name,
-            date: formattedDate, // use formatted date
-            bought_date: formattedBoughtDate, // use formatted bought_date
-            category: category || null,
-            price: parseFloat(price),
-            quantity: parseInt(quantity)
+            name: req.body.name !== undefined ? req.body.name : currentItem.name,
+            date: req.body.date !== undefined ? req.body.date : currentItem.date,
+            bought_date: req.body.bought_date !== undefined ? req.body.bought_date : currentItem.bought_date,
+            category: req.body.category !== undefined ? req.body.category : currentItem.category,
+            price: req.body.price !== undefined ? parseFloat(req.body.price) : parseFloat(currentItem.price),
+            quantity: req.body.quantity !== undefined ? parseInt(req.body.quantity) : parseInt(currentItem.quantity)
         };
+
         await db.updateItem(updatedItem);
         res.json({ success: true, item: updatedItem });
     } catch (error) {
@@ -179,77 +160,123 @@ app.put('/api/items/:id', async (req, res) => {
     }
 });
 
-// Route to delete an item from the list
-app.delete('/api/items/:id', async (req, res) => {
-    const itemId = req.params.id; // Get the item ID from the request parameters
-    await db.archiveItem(itemId); // Archive the item in the database
-    res.json({ id: itemId, archived: true }); // Send a JSON response indicating the item was archived
+// Route to delete (archive) an item from the list
+app.delete('/api/items/:id', requireAuth, async (req, res) => {
+    try {
+        const itemId = req.params.id;
+        await db.archiveItem(itemId);
+        res.json({ id: itemId, archived: true });
+    } catch (error) {
+        console.error('Error archiving item:', error);
+        res.status(500).json({ error: 'Internal server error' });
+    }
 });
 
 // Route to authenticate a user
 app.post('/api/login', async (req, res) => {
-    const { username, password } = req.body;
-    const user = await db.authenticateUser(username, password);
-    if (user) {
-        res.cookie('username', username, { httpOnly: true });
-        res.json({ success: true, isAdmin: user.isAdmin });
-    } else {
-        res.json({ success: false });
+    try {
+        const { username, password } = req.body;
+        const user = await db.authenticateUser(username, password);
+        if (user) {
+            res.cookie('username', username, {
+                httpOnly: true,
+                secure: false,
+                sameSite: 'lax'
+            });
+            res.json({ success: true, isAdmin: user.isAdmin });
+        } else {
+            res.json({ success: false });
+        }
+    } catch (error) {
+        console.error('Login error:', error);
+        res.status(500).json({ error: 'Internal server error' });
     }
 });
 
 // Route to log out a user
 app.post('/api/logout', (req, res) => {
-    res.clearCookie('username');
+    res.clearCookie('username', {
+        httpOnly: true,
+        secure: false,
+        sameSite: 'lax'
+    });
     res.json({ success: true });
 });
 
 // Route to get the current authenticated user
 app.get('/api/current-user', async (req, res) => {
-    const username = req.cookies.username;
-    if (username) {
-        // Use the new function that does not require a password
-        const user = await db.getUserByUsername(username);
-        res.json(user);
-    } else {
-        res.status(401).json({ error: 'Not authenticated' });
+    try {
+        const username = req.cookies.username;
+        if (username) {
+            const user = await db.getUserByUsername(username);
+            res.json(user);
+        } else {
+            res.status(401).json({ error: 'Not authenticated' });
+        }
+    } catch (error) {
+        console.error('Error fetching current user:', error);
+        res.status(500).json({ error: 'Internal server error' });
     }
 });
 
-// Route to create a new user
-app.post('/api/users', async (req, res) => {
-    const { username, password, isAdmin } = req.body;
-    await db.createUser(username, password, isAdmin);
-    res.json({ success: true });
+// Route to get all users (admin only)
+app.get('/api/users', requireAdmin, async (req, res) => {
+    try {
+        const users = await db.getUsers();
+        res.json(users);
+    } catch (error) {
+        console.error('Error fetching users:', error);
+        res.status(500).json({ error: 'Internal server error' });
+    }
 });
 
-// Route to update a user's password and admin status
-app.put('/api/users/:username', async (req, res) => {
-    const username = req.params.username;
-    const { password, isAdmin } = req.body;
-    await db.updateUser(username, password, isAdmin);
-    res.json({ success: true });
+// Route to get a specific user (admin only)
+app.get('/api/users/:username', requireAdmin, async (req, res) => {
+    try {
+        const username = req.params.username;
+        const user = await db.getUserByUsername(username);
+        res.json(user);
+    } catch (error) {
+        console.error('Error fetching user:', error);
+        res.status(500).json({ error: 'Internal server error' });
+    }
 });
 
-// Route to delete a user
-app.delete('/api/users/:username', async (req, res) => {
-    const username = req.params.username;
-    await db.deleteUser(username);
-    res.json({ success: true });
+// Route to create a new user (admin only)
+app.post('/api/users', requireAdmin, async (req, res) => {
+    try {
+        const { username, password, isAdmin } = req.body;
+        await db.createUser(username, password, isAdmin);
+        res.json({ success: true });
+    } catch (error) {
+        console.error('Error creating user:', error);
+        res.status(500).json({ error: error.message || 'Internal server error' });
+    }
 });
 
-// Route to get all users
-app.get('/api/users', async (req, res) => {
-    const users = await db.getUsers();
-    res.json(users);
+// Route to update a user's password and admin status (admin only)
+app.put('/api/users/:username', requireAdmin, async (req, res) => {
+    try {
+        const username = req.params.username;
+        const { password, isAdmin } = req.body;
+        await db.updateUser(username, password, isAdmin);
+        res.json({ success: true });
+    } catch (error) {
+        console.error('Error updating user:', error);
+        res.status(500).json({ error: 'Internal server error' });
+    }
 });
 
-// Route to get a specific user
-app.get('/api/users/:username', async (req, res) => {
-    const username = req.params.username;
-    // Changed: Use getUserByUsername instead of authenticateUser with empty password
-    const user = await db.getUserByUsername(username);
-    res.json(user);
+// Route to delete a user (admin only)
+app.delete('/api/users/:username', requireAdmin, async (req, res) => {
+    try {
+        const username = req.params.username;
+        await db.deleteUser(username);
+        res.json({ success: true });
+    } catch (error) {
+        console.error('Error deleting user:', error);
+        res.status(500).json({ error: 'Internal server error' });
+    }
 });
 
 // Serve the index.html file - redirect to login
@@ -262,6 +289,5 @@ app.get('/report.html', (req, res) => {
 });
 
 app.listen(PORT, () => {
-    console.log(`Server is running on http://localhost:${PORT}`); // Start the server and log the URL
+    console.log(`Server is running on http://localhost:${PORT}`);
 });
-

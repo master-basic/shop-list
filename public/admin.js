@@ -2,19 +2,6 @@
 
 let currentUser = null;
 
-// Import utils functions from global scope
-const utils = typeof window !== 'undefined' && window.utils ? window.utils : {
-    showToast: function(msg, type) {
-        console.log(`[${type.toUpperCase()}] ${msg}`);
-    },
-    formatDate: function(date) {
-        if (!date) return 'N/A';
-        return new Date(date).toLocaleDateString('en-US', {
-            year: 'numeric', month: 'short', day: 'numeric'
-        });
-    }
-};
-
 // Initialize theme
 async function initTheme() {
     if (typeof darkMode !== 'undefined') {
@@ -168,27 +155,6 @@ async function deleteUser(username) {
         console.error('Delete error:', error);
         showToast('Failed to delete user', 'error');
     }
-}
-
-// Toast notification
-function showToast(message, type = 'info') {
-    const toast = document.createElement('div');
-    toast.className = `toast toast-${type}`;
-    toast.textContent = message;
-    toast.style.cssText = `
-        position: fixed;
-        top: 20px;
-        right: 20px;
-        padding: 16px 24px;
-        border-radius: 8px;
-        color: white;
-        font-size: 14px;
-        z-index: 1000;
-        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
-    `;
-    
-    document.body.appendChild(toast);
-    setTimeout(() => toast.remove(), 3000);
 }
 
 // Initialize on load

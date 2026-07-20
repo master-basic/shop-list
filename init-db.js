@@ -1,8 +1,17 @@
-const mariadb = require('mariadb');
 const bcrypt = require('bcryptjs');
 const db = require('./db');
 
 require('dotenv').config();
+
+// Create pool for this script
+const mariadb = require('mariadb');
+const pool = mariadb.createPool({
+    host: process.env.DB_HOST,
+    user: process.env.DB_USER,
+    password: process.env.DB_PASSWORD,
+    database: process.env.DB_NAME,
+    connectionLimit: 1
+});
 
 async function initializeDatabase() {
     let conn;
@@ -45,7 +54,7 @@ async function initializeDatabase() {
         for (const item of sampleItems) {
             const dateStr = item.date ? item.date.toISOString().split('T')[0] : new Date().toISOString().split('T')[0];
             const boughtDateStr = item.bought_date ? item.bought_date.toISOString() : null;
-            
+
             await conn.query(
                 'INSERT INTO items (name, date, bought_date, category, price, quantity, created_by) VALUES (?, ?, ?, ?, ?, ?, ?)',
                 [item.name, dateStr, boughtDateStr, item.category, item.price, item.quantity, item.created_by]
@@ -66,14 +75,5 @@ async function initializeDatabase() {
         if (conn) conn.release();
     }
 }
-
-// Create pool for this script
-const pool = mariadb.createPool({
-    host: process.env.DB_HOST,
-    user: process.env.DB_USER,
-    password: process.env.DB_PASSWORD,
-    database: process.env.DB_NAME,
-    connectionLimit: 1
-});
 
 initializeDatabase();

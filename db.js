@@ -4,26 +4,20 @@ const bcrypt = require('bcryptjs');
 
 dotenv.config();
 
-// Create a single connection (for operations that don't need pooling)
-async function createConnection() {
-    return new Promise((resolve, reject) => {
-        mariadb.createConnection({
-            host: process.env.DB_HOST,
-            user: process.env.DB_USER,
-            password: process.env.DB_PASSWORD,
-            database: process.env.DB_NAME
-        }, (err, conn) => {
-            if (err) return reject(err);
-            resolve(conn);
-        });
-    });
-}
+// Create connection pool (used for all queries)
+const pool = mariadb.createPool({
+    host: process.env.DB_HOST,
+    user: process.env.DB_USER,
+    password: process.env.DB_PASSWORD,
+    database: process.env.DB_NAME,
+    connectionLimit: 5
+});
 
 // Create table function (standalone for init-db.js)
 async function createTable() {
     let conn;
     try {
-        conn = await createConnection();
+        conn = await pool.getConnection();
         await conn.query(`
             CREATE TABLE IF NOT EXISTS items (
                 id INT AUTO_INCREMENT,
@@ -56,20 +50,12 @@ async function createTable() {
 // Export createTable for init-db.js
 module.exports.createTable = createTable;
 
-const pool = mariadb.createPool({
-    host: process.env.DB_HOST,
-    user: process.env.DB_USER,
-    password: process.env.DB_PASSWORD,
-    database: process.env.DB_NAME,
-    connectionLimit: 5
-});
-
 // Initialize the database
 async function initializeDatabase() {
     let conn;
     try {
-        conn = await createConnection();
-        
+        conn = await pool.getConnection();
+
         // Create tables
         await conn.query(`
             CREATE TABLE IF NOT EXISTS items (
@@ -95,24 +81,24 @@ async function initializeDatabase() {
             created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
             updated_at DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
         )`);
-        
+
         // Create admin and regular users if they don't exist
         const hashedAdminPassword = await bcrypt.hash('admin123', 10);
         const hashedUserPassword = await bcrypt.hash('user123', 10);
-        
+
         // Check if users exist and create them if not
         const existingAdmin = await conn.query('SELECT username FROM users WHERE username = ?', ['admin']);
         if (existingAdmin.length === 0) {
-            await conn.query('INSERT INTO users (username, password, isAdmin) VALUES (?, ?, ?)', 
+            await conn.query('INSERT INTO users (username, password, isAdmin) VALUES (?, ?, ?)',
                 ['admin', hashedAdminPassword, true]);
         }
-        
+
         const existingUser = await conn.query('SELECT username FROM users WHERE username = ?', ['user']);
         if (existingUser.length === 0) {
-            await conn.query('INSERT INTO users (username, password, isAdmin) VALUES (?, ?, ?)', 
+            await conn.query('INSERT INTO users (username, password, isAdmin) VALUES (?, ?, ?)',
                 ['user', hashedUserPassword, false]);
         }
-        
+
         console.log('Database initialized with admin (admin/admin123) and user (user/user123) users');
     } catch (error) {
         console.error('Database initialization error:', error);
@@ -126,7 +112,7 @@ async function initializeDatabase() {
 async function getItems(includeArchived) {
     let conn;
     try {
-        conn = await createConnection();
+        conn = await pool.getConnection();
         const query = includeArchived ?
           "SELECT id, name, date, bought_date, category, price, quantity, bought_by, created_by FROM items" :
           "SELECT id, name, date, bought_date, category, price, quantity, bought_by, created_by FROM items WHERE archived = 0";
@@ -137,21 +123,48 @@ async function getItems(includeArchived) {
     }
 }
 
+// Get filtered items by date range and category
+async function getFilteredItems(startDate, endDate, category, includeArchived) {
+    let conn;
+    try {
+        conn = await pool.getConnection();
+
+        let query = includeArchived ?
+            "SELECT id, name, date, bought_date, category, price, quantity, bought_by, created_by FROM items" :
+            "SELECT id, name, date, bought_date, category, price, quantity, bought_by, created_by FROM items WHERE archived = 0";
+
+        const params = [];
+
+        if (!includeArchived && startDate) {
+            query += " AND date >= ?";
+            params.push(startDate);
+        } else if (includeArchived && startDate) {
+            query += " WHERE date >= ?";
+            params.push(startDate);
+        }
+
+        if (endDate) {
+            query += " AND date <= ?";
+            params.push(endDate);
+        }
+
+        if (category && category !== 'all') {
+            query += " AND category = ?";
+            params.push(category);
+        }
+
+        const rows = await conn.query(query, params);
+        return rows;
+    } finally {
+        if (conn) conn.release();
+    }
+}
+
 // Function to add a new item to the database
 async function addItem(item) {
     let conn;
     try {
-        conn = await createConnection();
-        
-        console.log('Executing query with params:', [
-            item.name,
-            item.date,
-            item.bought_date,
-            item.category,
-            item.price,
-            item.quantity,
-            item.created_by
-        ]);
+        conn = await pool.getConnection();
 
         const result = await conn.query(
             'INSERT INTO items (name, date, bought_date, category, price, quantity, created_by) VALUES (?, ?, ?, ?, ?, ?, ?)',
@@ -167,7 +180,6 @@ async function addItem(item) {
             [result.insertId]
         );
 
-        console.log('Retrieved new item:', newItem);
         return newItem;
 
     } catch (error) {
@@ -182,11 +194,11 @@ async function addItem(item) {
 async function markAsBought(itemId, username) {
     let conn;
     try {
-        conn = await createConnection();
+        conn = await pool.getConnection();
         const query = `
-            UPDATE items 
-            SET bought_date = NOW(), 
-                bought_by = ? 
+            UPDATE items
+            SET bought_date = NOW(),
+                bought_by = ?
             WHERE id = ?`;
         await conn.query(query, [username, itemId]);
     } finally {
@@ -198,7 +210,7 @@ async function markAsBought(itemId, username) {
 async function archiveItem(itemId) {
     let conn;
     try {
-        conn = await createConnection();
+        conn = await pool.getConnection();
         const query = `UPDATE items SET archived = TRUE WHERE id = ?`;
         await conn.query(query, [itemId]);
     } finally {
@@ -210,22 +222,22 @@ async function archiveItem(itemId) {
 async function authenticateUser(username, password) {
     let conn;
     try {
-        conn = await createConnection();
+        conn = await pool.getConnection();
         const query = `SELECT * FROM users WHERE username = ?`;
         const rows = await conn.query(query, [username]);
-        
+
         if (!rows || rows.length === 0) {
             return null;
         }
-        
+
         const user = rows[0];
         // Verify password using bcrypt
         const passwordMatch = await bcrypt.compare(password, user.password);
-        
+
         if (!passwordMatch) {
             return null;
         }
-        
+
         return { ...user, isAdmin: user.isAdmin };
     } finally {
         if (conn) conn.release();
@@ -236,7 +248,7 @@ async function authenticateUser(username, password) {
 async function getUserByUsername(username) {
     let conn;
     try {
-        conn = await createConnection();
+        conn = await pool.getConnection();
         const query = `SELECT username, isAdmin FROM users WHERE username = ?`;
         const rows = await conn.query(query, [username]);
         return rows[0];
@@ -249,17 +261,17 @@ async function getUserByUsername(username) {
 async function createUser(username, password, isAdmin) {
     let conn;
     try {
-        conn = await createConnection();
-        
+        conn = await pool.getConnection();
+
         // Check if user already exists
         const existingUser = await getUserByUsername(username);
         if (existingUser) {
             throw new Error('Username already exists');
         }
-        
+
         // Hash password before storing
         const hashedPassword = await bcrypt.hash(password, 10);
-        
+
         const query = `INSERT INTO users (username, password, isAdmin) VALUES (?, ?, ?)`
         await conn.query(query, [username, hashedPassword, isAdmin || false]);
     } catch (error) {
@@ -274,18 +286,18 @@ async function createUser(username, password, isAdmin) {
 async function updateUser(username, password, isAdmin) {
     let conn;
     try {
-        conn = await createConnection();
-        
-        // If new password provided, hash it
-        let hashedPassword;
+        conn = await pool.getConnection();
+
         if (password) {
-            hashedPassword = await bcrypt.hash(password, 10);
+            // Update password and isAdmin
+            const hashedPassword = await bcrypt.hash(password, 10);
+            const query = `UPDATE users SET password = ?, isAdmin = ?, updated_at = NOW() WHERE username = ?`;
+            await conn.query(query, [hashedPassword, isAdmin, username]);
         } else {
-            hashedPassword = null;
+            // Update only isAdmin, keep existing password
+            const query = `UPDATE users SET isAdmin = ?, updated_at = NOW() WHERE username = ?`;
+            await conn.query(query, [isAdmin, username]);
         }
-        
-        const query = `UPDATE users SET password = ?, isAdmin = ?, updated_at = NOW() WHERE username = ?`;
-        await conn.query(query, [hashedPassword, isAdmin, username]);
     } catch (error) {
         console.error('Error updating user:', error);
         throw error;
@@ -298,7 +310,7 @@ async function updateUser(username, password, isAdmin) {
 async function deleteUser(username) {
     let conn;
     try {
-        conn = await createConnection();
+        conn = await pool.getConnection();
         const query = `DELETE FROM users WHERE username = ?`;
         await conn.query(query, [username]);
     } catch (error) {
@@ -313,7 +325,7 @@ async function deleteUser(username) {
 async function getUsers() {
     let conn;
     try {
-        conn = await createConnection();
+        conn = await pool.getConnection();
         const query = `SELECT username, isAdmin FROM users`;
         const rows = await conn.query(query);
         return rows;
@@ -322,14 +334,14 @@ async function getUsers() {
     }
 }
 
-// Add this new function at an appropriate location
+// Update an item (full update)
 async function updateItem(item) {
     let conn;
     try {
-        conn = await createConnection();
+        conn = await pool.getConnection();
         const query = `
-            UPDATE items 
-            SET name = ?, date = ?, bought_date = ?, category = ?, price = ?, quantity = ? 
+            UPDATE items
+            SET name = ?, date = ?, bought_date = ?, category = ?, price = ?, quantity = ?
             WHERE id = ?
         `;
         await conn.query(query, [
@@ -349,10 +361,23 @@ async function updateItem(item) {
     }
 }
 
+// Get a single item by ID
+async function getItemById(itemId) {
+    let conn;
+    try {
+        conn = await pool.getConnection();
+        const rows = await conn.query('SELECT * FROM items WHERE id = ?', [itemId]);
+        return rows[0] || null;
+    } finally {
+        if (conn) conn.release();
+    }
+}
+
 module.exports = {
-    createTable, // Export for init-db.js
+    createTable,
     initializeDatabase,
     getItems,
+    getFilteredItems,
     addItem,
     markAsBought,
     archiveItem,
@@ -361,6 +386,7 @@ module.exports = {
     updateUser,
     deleteUser,
     getUsers,
-    getUserByUsername, // Export new function
-    updateItem // Export new function
+    getUserByUsername,
+    updateItem,
+    getItemById
 };

@@ -1,80 +1,5 @@
 // Login functionality
-
-// Import showToast from utils
-function showToast(message, type = 'info', duration = 3000) {
-    // Remove existing toast
-    const existingToast = document.querySelector('.toast');
-    if (existingToast) {
-        existingToast.remove();
-    }
-    
-    // Create toast element
-    const toast = document.createElement('div');
-    toast.className = `toast toast-${type}`;
-    toast.innerHTML = `
-        <span class="toast-message">${message}</span>
-        <button class="toast-close" aria-label="Close">&times;</button>
-    `;
-    
-    // Add styles
-    const toastStyles = `
-        <style>
-        .toast {
-            position: fixed;
-            top: 20px;
-            right: 20px;
-            padding: 16px 24px;
-            border-radius: 8px;
-            color: white;
-            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-            font-size: 14px;
-            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
-            z-index: 1000;
-            display: flex;
-            align-items: center;
-            gap: 12px;
-            animation: slideIn 0.3s ease;
-        }
-        @keyframes slideIn {
-            from {
-                transform: translateX(100%);
-                opacity: 0;
-            }
-            to {
-                transform: translateX(0);
-                opacity: 1;
-            }
-        }
-        .toast-success { background: #10b981; }
-        .toast-error { background: #ef4444; }
-        .toast-warning { background: #f59e0b; }
-        .toast-info { background: #3b82f6; }
-        .toast-close {
-            background: none;
-            border: none;
-            color: white;
-            font-size: 20px;
-            cursor: pointer;
-            opacity: 0.8;
-        }
-        .toast-close:hover { opacity: 1; }
-        </style>
-    `;
-    
-    document.head.insertAdjacentHTML('beforeend', toastStyles);
-    document.body.appendChild(toast);
-    
-    // Auto-remove after duration
-    setTimeout(() => {
-        toast.style.animation = 'slideIn 0.3s ease reverse';
-        setTimeout(() => toast.remove(), 300);
-    }, duration);
-    
-    // Close on button click
-    toast.querySelector('.toast-close').addEventListener('click', () => {
-        toast.remove();
-    });
-}
+// showToast is provided by utils.js (loaded before this script)
 
 // Validate input fields
 function validateInput(input, fieldName) {
@@ -146,7 +71,10 @@ function handleAdminLogin() {
     const form = document.getElementById('admin-login-form');
     if (!form) return;
     
-    form.addEventListener('submit', async (e) => {
+    const submitButton = form.querySelector('button');
+    if (!submitButton) return;
+    
+    submitButton.addEventListener('click', async (e) => {
         e.preventDefault();
         
         const usernameInput = document.getElementById('admin-username');

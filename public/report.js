@@ -2,24 +2,6 @@
 
 let currentUser = null;
 
-// Import utils functions from global scope
-const utils = typeof window !== 'undefined' && window.utils ? window.utils : {
-    showToast: function(msg, type) {
-        console.log(`[${type.toUpperCase()}] ${msg}`);
-    },
-    formatDate: function(date) {
-        if (!date) return 'N/A';
-        return new Date(date).toLocaleDateString('en-US', {
-            year: 'numeric', month: 'short', day: 'numeric'
-        });
-    },
-    formatCurrency: function(amount) {
-        return new Intl.NumberFormat('en-US', {
-            style: 'currency', currency: 'USD'
-        }).format(amount);
-    }
-};
-
 // Initialize theme
 async function initTheme() {
     if (typeof darkMode !== 'undefined') {
@@ -169,7 +151,7 @@ async function generateReport() {
         calculateReportStats(items);
     } catch (error) {
         console.error('Error generating report:', error);
-        utils.showToast('Failed to generate report', 'error');
+        showToast('Failed to generate report', 'error');
     }
 }
 
@@ -189,12 +171,12 @@ function renderReportTable(items) {
         const tr = document.createElement('tr');
         tr.innerHTML = `
             <td>${item.name}</td>
-            <td>${utils.formatDate(item.date)}</td>
-            <td>${item.bought_date ? utils.formatDate(item.bought_date) : '-'}</td>
+            <td>${formatDate(item.date)}</td>
+            <td>${item.bought_date ? formatDate(item.bought_date) : '-'}</td>
             <td>${item.category || '-'}</td>
-            <td>${utils.formatCurrency(item.price)}</td>
+            <td>${formatCurrency(item.price)}</td>
             <td>${item.quantity}</td>
-            <td>${utils.formatCurrency(item.price * item.quantity)}</td>
+            <td>${formatCurrency(item.price * item.quantity)}</td>
             <td>${item.bought_by || '-'}</td>
             <td class="actions">
                 <button class="action-button bought-button" onclick="toggleBought(this)">Bought</button>
@@ -254,51 +236,45 @@ function calculateReportStats(items) {
 // Toggle bought status
 async function toggleBought(button) {
     const row = button.closest('tr');
-    const itemName = row.querySelector('.item-name').textContent;
-    const itemTotal = row.querySelector('.item-total').textContent;
-    
-    const itemData = {
-        id: row.dataset.id,
-        bought: !button.classList.contains('bought')
-    };
-    
+    const itemId = row.dataset.id;
+    const itemName = row.querySelector('td')?.textContent || 'Item';
+
     try {
-        const response = await fetch('/api/item/bought', {
-            method: 'POST',
+        const response = await fetch(`/api/items/${itemId}/bought`, {
+            method: 'PUT',
             headers: {
                 'Content-Type': 'application/json',
-            },
-            body: JSON.stringify(itemData)
+            }
         });
-        
+
         if (response.ok) {
             button.classList.toggle('bought');
             button.textContent = button.classList.contains('bought') ? 'Bought' : 'Not Bought';
-            utils.showToast(itemName + ' marked as ' + (button.classList.contains('bought') ? 'bought' : 'not bought'), 'success');
+            showToast(itemName + ' marked as ' + (button.classList.contains('bought') ? 'bought' : 'not bought'), 'success');
         }
     } catch (error) {
         console.error('Error toggling bought status:', error);
-        utils.showToast('Failed to update status', 'error');
+        showToast('Failed to update status', 'error');
     }
 }
 
 // Delete item
 async function deleteItem(itemId) {
     if (!confirm('Are you sure you want to delete this item?')) return;
-    
+
     try {
-        const response = await fetch(`/api/item/${itemId}`, {
+        const response = await fetch(`/api/items/${itemId}`, {
             method: 'DELETE'
         });
-        
+
         if (response.ok) {
             const row = document.querySelector(`tr[data-id="${itemId}"]`);
             if (row) row.remove();
-            utils.showToast('Item deleted successfully', 'success');
+            showToast('Item deleted successfully', 'success');
         }
     } catch (error) {
         console.error('Error deleting item:', error);
-        utils.showToast('Failed to delete item', 'error');
+        showToast('Failed to delete item', 'error');
     }
 }
 
