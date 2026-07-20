@@ -296,39 +296,85 @@ New file with documented environment variables so new developers know what to co
   - `routes/users.js` — GET/POST/PUT/DELETE /api/users
   - `routes/auth.js` — POST /api/login (with rate limiter), GET /api/current-user, POST /api/logout
 
+## Session 3 (Current) — Polish & Fix Qwen's Incomplete Work
+
+### What was done
+
+#### 1. Critical bug fixes in Qwen's incomplete work
+- **fetchItems XSS regression**: `tdPrice.innerHTML = priceField` with inline `onchange` handlers interpolating `item.price` → replaced with `createElement` + `textContent`
+- **fetchItems filter logic**: Referenced deleted `showBought/showNotBought/showArchived` variables → switched to `data-filter` attribute detection
+- **showFilteredItems hoisting bug**: `items.filter(item => ...)` called on `items` before assignment → now delegates to `fetchItems()` which handles filtering
+- **admin.js syntax error**: Orphaned `try/catch/await` outside function after Qwen's partial edit → removed dead code
+- **admin.js FormData bug**: `new FormData(form)` on a `<div>` (not `<form>`) → switched to `getElementById().value`
+- **admin.html missing modal**: No `#edit-modal` element → added modal HTML structure
+- **admin.html missing toast**: No toast container → added
+- **report.html missing**: No theme-toggle button, modal, or toast → all added
+- **All 4 pages**: Empty `<button class="theme-toggle">` → filled with default SVG icons
+
+#### 2. Loading spinner on all pages
+- `utils.js`: `showLoading()` / `hideLoading()` — creates overlay + spinner on first call
+- `styles.css`: `.loading-overlay` (fixed, backdrop-filter blur) + `.spinner` (CSS rotate animation)
+- `script.js`: All API functions wrapped (`fetchItems`, `addItem`, `markAsBought`, `archiveItem`, `restoreItem`)
+- `admin.js`: All API functions wrapped (`fetchUsers`, `createUser`, `saveEditForm`, `deleteUser`)
+- `report.js`: All API functions wrapped (`generateReport`, `toggleBought`, `deleteItem`)
+
+#### 3. Sortable table columns
+- `index2.html`: `<th class="sortable" data-sort="...">` on all columns except Actions
+- `script.js`: `sortState` object + `sortItems(items)` function + `initSortableColumns()` click handler
+- Supports asc/desc toggle, arrow indicators via CSS `::after` pseudo-elements
+- Only on main page (index2) — report and admin tables excluded for now
+
+#### 4. SVG favicon
+- `public/favicon.svg`: teal (#00d4aa) rounded square with 3 white lines (shopping list icon)
+- `<link rel="icon" type="image/svg+xml">` in all 4 HTML pages
+
+#### 5. Print stylesheet
+- `@media print` block in styles.css: hides navigation, buttons, forms, modal, toast, spinner
+- Clean table with `#ccc` borders, white background, black text
+
+#### 6. Undo toast after archive
+- `utils.js` `showToast()`: added optional 4th param `action = { label, callback }` — renders a clickable action button (e.g. "Undo") inside the toast
+- `script.js` `archiveItem()`: after successful DELETE, shows an "Item archived" toast with "Undo" button for 10s; clicking Undo calls `PUT /:id/restore` to unarchive; a `pendingUndo` timeout prevents stale restores
+- Removed duplicate confirm dialog on `tdActions` capture listener (caused double confirm)
+
+#### 7. Quick-add keyboard shortcut
+- `script.js` `initQuickAddKeyboard()`: Enter on item-name → focus category → focus price → focus quantity → submit; Ctrl+Enter on any field calls `addItem()`
+
+#### 8. Bulk select actions
+- `index2.html`: Added checkbox column (`<th class="select-col">`) with select-all checkbox; added `.bulk-bar` between filter section and table with buttons for Mark Bought / Archive / Delete / Clear
+- `script.js`: `toggleSelectAll()`, `updateBulkBar()`, `clearSelection()`, `getSelectedIds()`, `bulkBought()`, `bulkArchive()`, `bulkDelete()` — all iterate over checked `[data-id]` checkboxes and call the respective endpoints
+- `routes/items.js`: Added `DELETE /:id/hard-delete` endpoint that calls `db.deleteItem()`
+- `db.js`: Added `deleteItem(itemId)` — runs `DELETE FROM items WHERE id = ?`
+- `styles.css`: Added `.bulk-bar`, `.select-col` styles, hide in print, mobile responsive
+- Fixed `saveEditing()` to query inputs by class name (was fragile cell index); shifted `enableEditing()` cell indices for new checkbox column
+
+#### 9. Mobile card layout (640px)
+- `script.js`: Added `data-label` attribute to every `<td>` in `fetchItems()` (Item, Date, Bought, Category, Price, Qty, Total, Bought By)
+- `styles.css`: At `640px`, `#shopping-table` transforms from table to stacked cards: thead hidden, each `tr` is a card with border + shadow, each `td` is a labeled row using `::before { content: attr(data-label) }` — scoped to `#shopping-table` so admin/report tables stay as tables
+
+### Future feature work (not assigned)
+- `index2.html`: Added checkbox column (`<th class="select-col">`) with select-all checkbox; added `.bulk-bar` between filter section and table with buttons for Mark Bought / Archive / Delete / Clear
+- `script.js`: `toggleSelectAll()`, `updateBulkBar()`, `clearSelection()`, `getSelectedIds()`, `bulkBought()`, `bulkArchive()`, `bulkDelete()` — all iterate over checked `[data-id]` checkboxes and call the respective endpoints
+- `routes/items.js`: Added `DELETE /:id/hard-delete` endpoint that calls `db.deleteItem()`
+- `db.js`: Added `deleteItem(itemId)` — runs `DELETE FROM items WHERE id = ?`
+- `styles.css`: Added `.bulk-bar`, `.select-col` styles, hide in print, mobile responsive
+- Fixed `saveEditing()` to query inputs by class name (was fragile cell index); shifted `enableEditing()` cell indices for new checkbox column
+
+### Future feature work (not assigned)
+- `utils.js` `showToast()`: added optional 4th param `action = { label, callback }` — renders a clickable action button (e.g. "Undo") inside the toast
+- `script.js` `archiveItem()`: after successful DELETE, shows an "Item archived" toast with "Undo" button for 10s; clicking Undo calls `PUT /:id/restore` to unarchive; a `pendingUndo` timeout prevents stale restores
+- Removed duplicate confirm dialog on `tdActions` capture listener (caused double confirm)
+
 ## What's still pending
 
-### Qwen tasks (frontend, UX, polish)
+### Future feature work (not assigned)
 
-| Priority | Task | Files |
-|----------|------|-------|
-| P1 | Remove dead code: `populateItemSelect`, `filterItems`, `selectItem`, `updateItemList` | `script.js` |
-| P1 | Consolidate showBought/showNotBought/showArchived into `showFilteredItems(type)` | `script.js` |
-| P1 | Replace admin.js editUser prompt with modal (like editItems.js pattern) | `admin.js`, `admin.html` |
-| P1 | Add text search bar filtering items by name/category in real-time | `index2.html`, `script.js`, `styles.css` |
-| P1 | Add sortable table columns (click header to sort name/price/date/category) | `script.js`, `report.js`, `admin.js`, `styles.css` |
-| P1 | Add loading spinner/overlay during all API fetches | `script.js`, `admin.js`, `report.js`, `styles.css` |
-| P2 | Default SVG icons in theme-toggle buttons (prevent empty flash) | `index2.html`, `login.html`, `admin.html`, `report.html` |
-| P2 | Add favicon to all pages | All HTML `<head>` |
-| P2 | Bulk select actions + "Select all" | `script.js`, `index2.html`, `styles.css` |
-| P2 | Undo toast after archive | `script.js`, `utils.js` |
-| P2 | Quick-add keyboard shortcut (Enter auto-advance, Ctrl+Enter submit) | `script.js`, `index2.html` |
-| P2 | Favorite/frequent items section (top 10) | `script.js`, `index2.html`, `styles.css` |
-| P2 | Item notes/description field | All layers |
-| P2 | Card-based mobile layout (table wraps poorly at 480px) | `styles.css`, all HTML |
-| P2 | Print stylesheet (hide nav/buttons, clean list) | `styles.css` |
-
-### DeepSeek tasks (backend/infra, future)
-
-| Priority | Task |
-|----------|------|
-| P3 | Input validation with Joi/Zod |
-| P3 | Real session management (JWT or express-session) |
-| P3 | CSRF protection |
-| P3 | Docker + Docker Compose for one-command setup |
-| P3 | Rate limiting on all mutation endpoints |
-| P3 | Multiple shopping lists (database support) |
-| P3 | Sharing lists with other users + permission levels |
-| P3 | Export to CSV / PDF |
-| P3 | Spending history charts (monthly, category breakdown) |
-| P3 | Migration system (db-migrate or similar) |
+| Category | Task | Priority |
+|----------|------|----------|
+| UX | Favorite/frequent items section | P2 |
+| UX | Item notes/description field | P2 |
+| Security | CSRF protection | P3 |
+| Data | Multiple shopping lists (schema + UI) | P3 |
+| Data | Sharing lists with permissions | P3 |
+| Data | Spending history charts | P3 |
+| Infra | Migration system (db-migrate) | P3 |
