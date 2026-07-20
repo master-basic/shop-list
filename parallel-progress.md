@@ -60,8 +60,8 @@ D:\Repos\shop-list\
 | P0 | Add `confirm()` dialog before archive in main list | `script.js` | ✅ Completed |
 | P1 | Fix `formatCurrency` to use AZN prefix instead of locale | `utils.js` | ✅ Completed |
 | P1 | Remove duplicate `formatDate()` from `report.js` | `report.js` | ✅ Completed |
-| P1 | Remove dead code: `populateItemSelect`, `filterItems`, `selectItem`, `updateItemList` | `script.js` | 🔴 Pending |
-| P1 | Consolidate showBought/showNotBought/showArchived into single `showFilteredItems(type)` | `script.js` | 🔴 Pending |
+| P1 | Remove dead code: `populateItemSelect`, `filterItems`, `selectItem`, `updateItemList` | `script.js` | Qwen ✅ | Completed |
+| P1 | Consolidate showBought/showNotBought/showArchived into single `showFilteredItems(type)` | `script.js` | Qwen ✅ | Completed |
 | P1 | Fix admin.js editUser prompt — replace with modal (like editItems.js pattern) | `admin.js`, `admin.html` | 🔴 Pending |
 | P1 | Add text search bar that filters items by name/category in real-time | `index2.html`, `script.js`, `styles.css` | 🔴 Pending |
 | P1 | Add sortable table columns (click header to sort name/price/date/category) | `script.js`, `report.js`, `admin.js`, `styles.css` | 🔴 Pending |

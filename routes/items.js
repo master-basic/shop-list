@@ -2,6 +2,7 @@ const express = require('express');
 const router = express.Router();
 const db = require('../db');
 const { requireAuth } = require('../middleware/auth');
+const { validate, itemSchema, updateItemSchema } = require('../middleware/validate');
 
 router.get('/', async (req, res) => {
     try {
@@ -21,21 +22,36 @@ router.get('/', async (req, res) => {
     }
 });
 
-router.post('/', requireAuth, async (req, res) => {
+router.get('/export/csv', async (req, res) => {
     try {
-        const { name, price, quantity, date, category } = req.body;
+        const includeArchived = req.query.includeArchived === 'true';
+        const items = await db.getItems(includeArchived);
 
-        if (!name || name.trim() === '') {
-            return res.status(400).json({ error: 'Item name is required' });
-        }
+        const headers = 'Name,Category,Price,Quantity,Total,Bought Date,Bought By,Created By,Date Added,Archived\n';
+        const rows = items.map(item =>
+            `"${(item.name || '').replace(/"/g, '""')}","${(item.category || '').replace(/"/g, '""')}",${item.price || 0},${item.quantity || 1},${(item.price || 0) * (item.quantity || 1)},"${item.bought_date || ''}","${item.bought_by || ''}","${item.created_by || ''}","${item.date || ''}",${item.archived ? 'Yes' : 'No'}`
+        ).join('\n');
+
+        res.setHeader('Content-Type', 'text/csv');
+        res.setHeader('Content-Disposition', 'attachment; filename="shopping-list.csv"');
+        res.send(headers + rows);
+    } catch (error) {
+        console.error('Error exporting CSV:', error);
+        res.status(500).json({ error: 'Internal server error' });
+    }
+});
+
+router.post('/', requireAuth, validate(itemSchema), async (req, res) => {
+    try {
+        const { name, price, quantity, category } = req.body;
 
         const newItem = {
-            name: name.trim(),
+            name: name,
             date: new Date().toISOString().slice(0, 19).replace('T', ' '),
             bought_date: null,
             category: category || null,
-            price: parseFloat(price) || 0.00,
-            quantity: parseInt(quantity) || 1,
+            price: price || 0.00,
+            quantity: quantity || 1,
             created_by: req.username
         };
 
@@ -78,7 +94,7 @@ router.put('/:id/bought', requireAuth, async (req, res) => {
     }
 });
 
-router.put('/:id', requireAuth, async (req, res) => {
+router.put('/:id', requireAuth, validate(updateItemSchema), async (req, res) => {
     try {
         const itemId = req.params.id;
         const currentItem = await db.getItemById(itemId);
@@ -93,8 +109,8 @@ router.put('/:id', requireAuth, async (req, res) => {
             date: req.body.date !== undefined ? req.body.date : currentItem.date,
             bought_date: req.body.bought_date !== undefined ? req.body.bought_date : currentItem.bought_date,
             category: req.body.category !== undefined ? req.body.category : currentItem.category,
-            price: req.body.price !== undefined ? parseFloat(req.body.price) : parseFloat(currentItem.price),
-            quantity: req.body.quantity !== undefined ? parseInt(req.body.quantity) : parseInt(currentItem.quantity)
+            price: req.body.price !== undefined ? req.body.price : parseFloat(currentItem.price),
+            quantity: req.body.quantity !== undefined ? req.body.quantity : parseInt(currentItem.quantity)
         };
 
         await db.updateItem(updatedItem);

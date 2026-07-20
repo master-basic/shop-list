@@ -2,6 +2,7 @@ const express = require('express');
 const rateLimit = require('express-rate-limit');
 const router = express.Router();
 const db = require('../db');
+const { validate, loginSchema } = require('../middleware/validate');
 
 const loginLimiter = rateLimit({
     windowMs: 15 * 60 * 1000,
@@ -11,7 +12,7 @@ const loginLimiter = rateLimit({
     legacyHeaders: false
 });
 
-router.post('/login', loginLimiter, async (req, res) => {
+router.post('/login', loginLimiter, validate(loginSchema), async (req, res) => {
     try {
         const { username, password } = req.body;
         const user = await db.authenticateUser(username, password);

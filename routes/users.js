@@ -2,6 +2,7 @@ const express = require('express');
 const router = express.Router();
 const db = require('../db');
 const { requireAdmin } = require('../middleware/auth');
+const { validate, createUserSchema, updateUserSchema } = require('../middleware/validate');
 
 router.get('/', requireAdmin, async (req, res) => {
     try {
@@ -24,18 +25,18 @@ router.get('/:username', requireAdmin, async (req, res) => {
     }
 });
 
-router.post('/', requireAdmin, async (req, res) => {
+router.post('/', requireAdmin, validate(createUserSchema), async (req, res) => {
     try {
         const { username, password, isAdmin } = req.body;
         await db.createUser(username, password, isAdmin);
-        res.json({ success: true });
+        res.status(201).json({ success: true });
     } catch (error) {
         console.error('Error creating user:', error);
         res.status(500).json({ error: error.message || 'Internal server error' });
     }
 });
 
-router.put('/:username', requireAdmin, async (req, res) => {
+router.put('/:username', requireAdmin, validate(updateUserSchema), async (req, res) => {
     try {
         const username = req.params.username;
         const { password, isAdmin } = req.body;

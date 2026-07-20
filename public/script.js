@@ -290,45 +290,6 @@ async function saveEditing(itemId) {
     }
 }
 
-// Function to populate the item select dropdown
-function populateItemSelect(items) {
-    const select = document.getElementById('item-select');
-    if (!select) return;
-    select.innerHTML = '';
-    items.forEach(item => {
-        const option = document.createElement('option');
-        option.value = item.name;
-        option.textContent = item.name;
-        select.appendChild(option);
-    });
-}
-
-// Function to filter items in the dropdown based on user input
-function filterItems() {
-    const input = document.getElementById('item-name').value.toLowerCase();
-    const select = document.getElementById('item-select');
-    const options = select.options;
-    let matchFound = false;
-    for (let i = 0; i < options.length; i++) {
-        const option = options[i];
-        if (option.value.toLowerCase().includes(input)) {
-            option.style.display = '';
-            matchFound = true;
-        } else {
-            option.style.display = 'none';
-        }
-    }
-    select.style.display = matchFound ? 'block' : 'none';
-}
-
-// Function to select an item from the dropdown
-function selectItem() {
-    const select = document.getElementById('item-select');
-    const input = document.getElementById('item-name');
-    input.value = select.value;
-    select.style.display = 'none';
-}
-
 // Function to add a new item to the list
 async function addItem() {
     try {
@@ -468,24 +429,54 @@ async function logout() {
     }
 }
 
-// Function to show bought items
-async function showBoughtItems(event) {
+// Function to show filtered items (bought/not-bought/archived)
+async function showFilteredItems(type) {
     const buttons = document.querySelectorAll('.filter-buttons button');
     buttons.forEach(btn => btn.classList.remove('active'));
-    (event.target || event.srcElement).classList.add('active');
+    
+    // Activate the button that corresponds to the type
+    const typeMap = { 'bought': 0, 'not-bought': 1, 'archived': 2 };
+    if (typeMap[type] !== undefined && buttons[typeMap[type]]) {
+        buttons[typeMap[type]].classList.add('active');
+    }
     
     const activeCategory = document.querySelector('.category-chip.active')?.dataset.category || '';
     try {
-        const response = await fetch('/api/items');
+        let items, url;
+        switch (type) {
+            case 'bought':
+                url = '/api/items';
+                items = items.filter(item => item.bought_date);
+                break;
+            case 'not-bought':
+                url = '/api/items';
+                items = items.filter(item => !item.bought_date);
+                break;
+            case 'archived':
+                url = '/api/items?includeArchived=true';
+                items = items.filter(item => item.archived);
+                break;
+        }
+
+        const response = await fetch(url);
         if (!response.ok) {
             throw new Error('Failed to fetch items');
         }
-        const items = await response.json();
+        const allItems = await response.json();
+        items = allItems.filter(item => {
+            if (type === 'bought') return item.bought_date;
+            if (type === 'not-bought') return !item.bought_date;
+            if (type === 'archived') return item.archived;
+            return false;
+        });
+        
         const list = document.getElementById('shopping-list');
         list.innerHTML = '';
         let totalAmount = 0;
-        items.filter(item => item.bought_date).forEach(item => {
-            if (activeCategory && item.category !== activeCategory) return;
+        items.filter(item => {
+            if (activeCategory && item.category !== activeCategory) return false;
+            return true;
+        }).forEach(item => {
             
             const tr = document.createElement('tr');
             const itemDate = new Date(item.date).toLocaleString('en-GB', { hour12: false });
@@ -519,103 +510,29 @@ async function showBoughtItems(event) {
             tdBoughtBy.textContent = item.bought_by || '';
             
             const tdActions = document.createElement('td');
-            const btnArchive = document.createElement('button');
-            btnArchive.className = 'action-button archive-button';
-            btnArchive.textContent = 'Archive';
-            btnArchive.onclick = () => archiveItem(item.id);
-            tdActions.appendChild(btnArchive);
+            const actionButtons = [];
             
-            tr.appendChild(tdName);
-            tr.appendChild(tdDate);
-            tr.appendChild(tdBoughtDate);
-            tr.appendChild(tdCategory);
-            tr.appendChild(tdPrice);
-            tr.appendChild(tdQuantity);
-            tr.appendChild(tdTotalPrice);
-            tr.appendChild(tdBoughtBy);
-            tr.appendChild(tdActions);
-            
-            list.appendChild(tr);
-        });
-        document.getElementById('total-amount').textContent = `AZN ${totalAmount.toFixed(2)}`;
-        document.getElementById('total-items').textContent = list.children.length;
-        document.getElementById('purchased-count').textContent = '—';
-        if (list.children.length === 0) {
-            list.innerHTML = '<tr><td colspan="9" class="empty-state">No bought items found</td></tr>';
-        }
-    } catch (error) {
-        console.error('Error showing bought items:', error);
-        showToast('Failed to load bought items', 'error');
-    }
-}
-
-// Function to show not bought items
-async function showNotBoughtItems(event) {
-    const buttons = document.querySelectorAll('.filter-buttons button');
-    buttons.forEach(btn => btn.classList.remove('active'));
-    (event.target || event.srcElement).classList.add('active');
-    
-    const activeCategory = document.querySelector('.category-chip.active')?.dataset.category || '';
-    try {
-        const response = await fetch('/api/items');
-        if (!response.ok) {
-            throw new Error('Failed to fetch items');
-        }
-        const items = await response.json();
-        const list = document.getElementById('shopping-list');
-        list.innerHTML = '';
-        let totalAmount = 0;
-        items.filter(item => !item.bought_date).forEach(item => {
-            if (activeCategory && item.category !== activeCategory) return;
-            
-            const tr = document.createElement('tr');
-            const itemDate = new Date(item.date).toLocaleString('en-GB', { hour12: false });
-            const totalPrice = item.price * item.quantity;
-            totalAmount += totalPrice;
-            
-            const tdName = document.createElement('td');
-            tdName.textContent = item.name;
-            
-            const tdDate = document.createElement('td');
-            tdDate.textContent = itemDate;
-            
-            const tdBoughtDate = document.createElement('td');
-            tdBoughtDate.textContent = '';
-            
-            const tdCategory = document.createElement('td');
-            tdCategory.textContent = item.category || 'N/A';
-            
-            const tdPrice = document.createElement('td');
-            tdPrice.textContent = item.price;
-            
-            const tdQuantity = document.createElement('td');
-            tdQuantity.textContent = item.quantity;
-            
-            const tdTotalPrice = document.createElement('td');
-            tdTotalPrice.textContent = totalPrice.toFixed(2);
-            
-            const tdBoughtBy = document.createElement('td');
-            tdBoughtBy.textContent = '';
-            
-            const tdActions = document.createElement('td');
-            const btnBought = document.createElement('button');
-            btnBought.className = 'action-button bought-button';
-            btnBought.textContent = 'Bought';
-            btnBought.onclick = () => markAsBought(item.id);
+            if (!item.bought_date) {
+                const btnBought = document.createElement('button');
+                btnBought.className = 'action-button bought-button';
+                btnBought.textContent = 'Bought';
+                btnBought.onclick = () => markAsBought(item.id);
+                actionButtons.push(btnBought);
+            }
             
             const btnArchive = document.createElement('button');
             btnArchive.className = 'action-button archive-button';
             btnArchive.textContent = 'Archive';
             btnArchive.onclick = () => archiveItem(item.id);
+            actionButtons.push(btnArchive);
             
             const btnEdit = document.createElement('button');
             btnEdit.className = 'action-button edit-button';
             btnEdit.textContent = 'Edit';
             btnEdit.onclick = () => enableEditing(tr);
+            actionButtons.push(btnEdit);
             
-            tdActions.appendChild(btnBought);
-            tdActions.appendChild(btnArchive);
-            tdActions.appendChild(btnEdit);
+            actionButtons.forEach(btn => tdActions.appendChild(btn));
             
             tr.appendChild(tdName);
             tr.appendChild(tdDate);
@@ -633,21 +550,30 @@ async function showNotBoughtItems(event) {
         document.getElementById('total-items').textContent = list.children.length;
         document.getElementById('purchased-count').textContent = '—';
         if (list.children.length === 0) {
-            list.innerHTML = '<tr><td colspan="9" class="empty-state">No unbought items found</td></tr>';
+            list.innerHTML = '<tr><td colspan="9" class="empty-state">No items found</td></tr>';
         }
     } catch (error) {
-        console.error('Error showing not bought items:', error);
-        showToast('Failed to load not bought items', 'error');
+        console.error('Error showing filtered items:', error);
+        showToast('Failed to load items', 'error');
     }
 }
 
-// Function to show archived items
-async function showArchivedItems(event) {
-    const buttons = document.querySelectorAll('.filter-buttons button');
-    buttons.forEach(btn => btn.classList.remove('active'));
-    (event.target || event.srcElement).classList.add('active');
-    
-    const activeCategory = document.querySelector('.category-chip.active')?.dataset.category || '';
+// Initialize category filter chips
+document.addEventListener('DOMContentLoaded', () => {
+    initCategoryFilter();
+});
+
+function initCategoryFilter() {
+    const chips = document.querySelectorAll('.category-chip');
+    chips.forEach(chip => {
+        chip.addEventListener('click', () => {
+            toggleCategoryFilter(chip.dataset.category);
+        });
+    });
+}
+
+// Fetch and display the items when the page loads
+fetchItems();
     try {
         const response = await fetch('/api/items?includeArchived=true');
         if (!response.ok) {
@@ -728,6 +654,11 @@ async function showArchivedItems(event) {
     }
 }
 
+function exportCSV() {
+    const includeArchived = document.querySelector('.filter-buttons .active')?.textContent === 'Archived';
+    window.open(`/api/items/export/csv?includeArchived=${includeArchived}`, '_blank');
+}
+
 // Initialize category filter chips
 document.addEventListener('DOMContentLoaded', () => {
     initCategoryFilter();
@@ -744,12 +675,3 @@ function initCategoryFilter() {
 
 // Fetch and display the items when the page loads
 fetchItems();
-
-function updateItemList(htmlContent) {
-    const container = document.getElementById('itemList');
-    if (container) {
-        container.innerHTML = htmlContent;
-    } else {
-        console.error("Container with id 'itemList' not found.");
-    }
-}
