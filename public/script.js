@@ -92,20 +92,34 @@ async function fetchItems() {
 
             if (!matchesCategory || !matchesFilter) return;
 
+            const tdCheck = document.createElement('td');
+            tdCheck.className = 'select-col';
+            const cb = document.createElement('input');
+            cb.type = 'checkbox';
+            cb.className = 'item-checkbox';
+            cb.dataset.id = item.id;
+            cb.onchange = updateBulkBar;
+            tdCheck.appendChild(cb);
+
             const tdName = document.createElement('td');
+            tdName.dataset.label = 'Item';
             tdName.className = item.bought_date ? 'bought' : '';
             tdName.textContent = item.name;
             
             const tdDate = document.createElement('td');
+            tdDate.dataset.label = 'Date';
             tdDate.textContent = itemDate;
             
             const tdBoughtDate = document.createElement('td');
+            tdBoughtDate.dataset.label = 'Bought';
             tdBoughtDate.textContent = boughtDate;
             
             const tdCategory = document.createElement('td');
+            tdCategory.dataset.label = 'Category';
             tdCategory.textContent = item.category || 'N/A';
             
             const tdPrice = document.createElement('td');
+            tdPrice.dataset.label = 'Price';
             if (isBought) {
                 tdPrice.textContent = item.price;
             } else {
@@ -119,6 +133,7 @@ async function fetchItems() {
             }
             
             const tdQuantity = document.createElement('td');
+            tdQuantity.dataset.label = 'Qty';
             if (isBought) {
                 tdQuantity.textContent = item.quantity;
             } else {
@@ -133,9 +148,11 @@ async function fetchItems() {
             }
             
             const tdTotalPrice = document.createElement('td');
+            tdTotalPrice.dataset.label = 'Total';
             tdTotalPrice.textContent = totalPrice.toFixed(2);
             
             const tdBoughtBy = document.createElement('td');
+            tdBoughtBy.dataset.label = 'Bought By';
             tdBoughtBy.textContent = item.bought_by || '';
             
             const tdActions = document.createElement('td');
@@ -160,15 +177,7 @@ async function fetchItems() {
             actionButtons.push(btnArchive);
             actionButtons.forEach(btn => tdActions.appendChild(btn));
             
-            tdActions.addEventListener('click', (e) => {
-                if (e.target.classList.contains('archive-button')) {
-                    if (!confirm('Are you sure you want to archive this item?')) {
-                        e.preventDefault();
-                        return;
-                    }
-                }
-            }, true);
-            
+            tr.appendChild(tdCheck);
             tr.appendChild(tdName);
             tr.appendChild(tdDate);
             tr.appendChild(tdBoughtDate);
@@ -187,7 +196,7 @@ async function fetchItems() {
         document.getElementById('purchased-count').textContent = purchasedCount;
 
         if (list.children.length === 0) {
-            list.innerHTML = '<tr><td colspan="9" class="empty-state">No items found</td></tr>';
+            list.innerHTML = '<tr><td colspan="10" class="empty-state">No items found</td></tr>';
         }
         hideLoading();
     } catch (error) {
@@ -259,10 +268,10 @@ function toggleCategoryFilter(category) {
 // Function to enable editing of a row
 function enableEditing(row) {
     const cells = row.querySelectorAll('td');
-    const itemName = cells[0].textContent;
-    const itemPrice = cells[4].querySelector('input')?.value || 0;
-    const itemQuantity = cells[5].querySelector('input')?.value || 1;
-    const itemCategory = cells[3].textContent;
+    const itemName = cells[1].textContent;
+    const itemPrice = cells[5].querySelector('input')?.value || 0;
+    const itemQuantity = cells[6].querySelector('input')?.value || 1;
+    const itemCategory = cells[4].textContent;
     
     const nameInput = document.createElement('input');
     nameInput.type = 'text';
@@ -288,10 +297,10 @@ function enableEditing(row) {
     quantityInput.className = 'edit-quantity-input';
     quantityInput.placeholder = 'Quantity';
     
-    cells[0].replaceWith(nameInput);
-    cells[3].replaceWith(categoryInput);
-    cells[4].replaceWith(priceInput);
-    cells[5].replaceWith(quantityInput);
+    cells[1].replaceWith(nameInput);
+    cells[4].replaceWith(categoryInput);
+    cells[5].replaceWith(priceInput);
+    cells[6].replaceWith(quantityInput);
     
     const actionsCell = cells[cells.length - 1];
     const btnBought = document.createElement('button');
@@ -322,13 +331,12 @@ async function saveEditing(itemId) {
     const row = document.querySelector(`tr[data-id="${itemId}"]`);
     if (!row) return;
     
-    const cells = row.querySelectorAll('td');
     const item = {
         id: itemId,
-        name: cells[0].querySelector('.item-input')?.value,
-        category: cells[3].querySelector('.edit-category-input')?.value,
-        price: parseFloat(cells[4].querySelector('.edit-price-input')?.value) || 0,
-        quantity: parseInt(cells[5].querySelector('.edit-quantity-input')?.value) || 1
+        name: row.querySelector('.item-input')?.value,
+        category: row.querySelector('.edit-category-input')?.value,
+        price: parseFloat(row.querySelector('.edit-price-input')?.value) || 0,
+        quantity: parseInt(row.querySelector('.edit-quantity-input')?.value) || 1
     };
     
     try {
@@ -436,9 +444,16 @@ async function markAsBought(itemId) {
     }
 }
 
+// Undo state for archive
+let pendingUndo = null;
+
 // Function to archive an item from the list
 async function archiveItem(itemId) {
     if (!confirm('Are you sure you want to archive this item?')) return;
+    if (pendingUndo) {
+        clearTimeout(pendingUndo.timeout);
+        pendingUndo = null;
+    }
     showLoading();
     try {
         const response = await fetch(`/api/items/${itemId}`, {
@@ -449,7 +464,38 @@ async function archiveItem(itemId) {
             throw new Error(error.error || 'Failed to archive item');
         }
         hideLoading();
-        showToast('Item archived', 'success');
+
+        const undoTimeout = setTimeout(() => {
+            pendingUndo = null;
+        }, 10000);
+
+        pendingUndo = { itemId, timeout: undoTimeout };
+
+        showToast('Item archived', 'info', 10000, {
+            label: 'Undo',
+            callback: async () => {
+                clearTimeout(undoTimeout);
+                pendingUndo = null;
+                showLoading();
+                try {
+                    const restoreResponse = await fetch(`/api/items/${itemId}/restore`, {
+                        method: 'PUT'
+                    });
+                    if (!restoreResponse.ok) {
+                        const err = await restoreResponse.json();
+                        throw new Error(err.error || 'Failed to restore item');
+                    }
+                    hideLoading();
+                    showToast('Item restored', 'success');
+                    await fetchItems();
+                } catch (error) {
+                    hideLoading();
+                    console.error('Error restoring item:', error);
+                    showToast(error.message || 'Failed to restore item', 'error');
+                }
+            }
+        });
+
         await fetchItems();
     } catch (error) {
         hideLoading();
@@ -519,11 +565,128 @@ function exportCSV() {
     window.open(`/api/items/export/csv?includeArchived=${includeArchived}`, '_blank');
 }
 
-// Initialize category filter chips and sortable columns
+// ===== BULK SELECT =====
+function toggleSelectAll(cb) {
+    document.querySelectorAll('.item-checkbox').forEach(c => c.checked = cb.checked);
+    updateBulkBar();
+}
+
+function updateBulkBar() {
+    const checked = document.querySelectorAll('.item-checkbox:checked');
+    const bar = document.getElementById('bulk-bar');
+    const label = document.getElementById('bulk-label');
+    if (checked.length === 0) {
+        bar.style.display = 'none';
+        return;
+    }
+    bar.style.display = 'flex';
+    label.textContent = `${checked.length} selected`;
+}
+
+function clearSelection() {
+    document.querySelectorAll('.item-checkbox').forEach(c => c.checked = false);
+    document.getElementById('select-all').checked = false;
+    updateBulkBar();
+}
+
+function getSelectedIds() {
+    return Array.from(document.querySelectorAll('.item-checkbox:checked')).map(c => c.dataset.id);
+}
+
+async function bulkBought() {
+    const ids = getSelectedIds();
+    if (!ids.length) return;
+    if (!confirm(`Mark ${ids.length} item(s) as bought?`)) return;
+    showLoading();
+    try {
+        const userResponse = await fetch('/api/current-user');
+        if (!userResponse.ok) throw new Error('Not logged in');
+        const user = await userResponse.json();
+        for (const id of ids) {
+            await fetch(`/api/items/${id}/bought`, {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ bought_by: user.username })
+            });
+        }
+        hideLoading();
+        showToast(`${ids.length} item(s) marked as bought`, 'success');
+        clearSelection();
+        await fetchItems();
+    } catch (error) {
+        hideLoading();
+        showToast(error.message || 'Bulk buy failed', 'error');
+    }
+}
+
+async function bulkArchive() {
+    const ids = getSelectedIds();
+    if (!ids.length) return;
+    if (!confirm(`Archive ${ids.length} item(s)?`)) return;
+    showLoading();
+    try {
+        for (const id of ids) {
+            await fetch(`/api/items/${id}`, { method: 'DELETE' });
+        }
+        hideLoading();
+        showToast(`${ids.length} item(s) archived`, 'success');
+        clearSelection();
+        await fetchItems();
+    } catch (error) {
+        hideLoading();
+        showToast(error.message || 'Bulk archive failed', 'error');
+    }
+}
+
+async function bulkDelete() {
+    const ids = getSelectedIds();
+    if (!ids.length) return;
+    if (!confirm(`Permanently delete ${ids.length} item(s)? This cannot be undone.`)) return;
+    if (!confirm(`Are you sure? This will permanently remove ${ids.length} item(s) from the database.`)) return;
+    showLoading();
+    try {
+        for (const id of ids) {
+            await fetch(`/api/items/${id}/hard-delete`, { method: 'DELETE' });
+        }
+        hideLoading();
+        showToast(`${ids.length} item(s) deleted permanently`, 'success');
+        clearSelection();
+        await fetchItems();
+    } catch (error) {
+        hideLoading();
+        showToast(error.message || 'Bulk delete failed', 'error');
+    }
+}
+
+// Initialize category filter chips, sortable columns, and quick-add keyboard
 document.addEventListener('DOMContentLoaded', () => {
     initCategoryFilter();
     initSortableColumns();
+    initQuickAddKeyboard();
 });
+
+function initQuickAddKeyboard() {
+    const fields = ['item-name', 'item-category', 'item-price', 'item-quantity'];
+    fields.forEach((id, i) => {
+        const el = document.getElementById(id);
+        if (!el) return;
+        el.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter' && !e.ctrlKey && !e.metaKey) {
+                e.preventDefault();
+                if (i < fields.length - 1) {
+                    const next = document.getElementById(fields[i + 1]);
+                    if (next) next.focus();
+                } else {
+                    addItem();
+                }
+            }
+            if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) {
+                e.preventDefault();
+                addItem();
+            }
+        });
+    });
+}
 
 function initSortableColumns() {
     document.querySelectorAll('th.sortable').forEach(th => {

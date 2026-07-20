@@ -84,10 +84,21 @@
             </div>
         </div>
 
+        <div class="bulk-bar" id="bulk-bar" style="display:none">
+            <span class="bulk-label" id="bulk-label">0 selected</span>
+            <div class="bulk-actions">
+                <button class="button button-secondary" onclick="bulkBought()">Mark Bought</button>
+                <button class="button button-secondary" onclick="bulkArchive()">Archive</button>
+                <button class="button button-secondary delete-button" onclick="bulkDelete()">Delete</button>
+                <button class="button button-secondary" onclick="clearSelection()">Clear</button>
+            </div>
+        </div>
+
         <div class="table-container">
             <table id="shopping-table">
                 <thead>
                     <tr>
+                        <th class="select-col"><input type="checkbox" id="select-all" onchange="toggleSelectAll(this)"></th>
                         <th class="sortable" data-sort="name">Item</th>
                         <th class="sortable" data-sort="date">Date</th>
                         <th class="sortable" data-sort="bought_date">Bought Date</th>

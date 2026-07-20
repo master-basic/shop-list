@@ -245,6 +245,17 @@ async function unarchiveItem(itemId) {
     }
 }
 
+// Permanently delete an item from the database
+async function deleteItem(itemId) {
+    let conn;
+    try {
+        conn = await pool.getConnection();
+        await conn.query(`DELETE FROM items WHERE id = ?`, [itemId]);
+    } finally {
+        if (conn) conn.release();
+    }
+}
+
 // Authenticate a user with password verification
 async function authenticateUser(username, password) {
     let conn;
@@ -425,6 +436,7 @@ module.exports = {
     unbuyItem,
     archiveItem,
     unarchiveItem,
+    deleteItem,
     authenticateUser,
     createUser,
     updateUser,

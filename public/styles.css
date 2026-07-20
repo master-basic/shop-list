@@ -976,6 +976,59 @@ tr .empty-state {
   color: var(--text-primary);
 }
 
+/* ===== BULK SELECT ===== */
+.select-col {
+    width: 40px;
+    text-align: center;
+}
+
+.select-col input[type="checkbox"] {
+    width: 16px;
+    height: 16px;
+    cursor: pointer;
+    accent-color: var(--primary);
+}
+
+.bulk-bar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    padding: 10px 20px;
+    margin-bottom: 16px;
+    background: var(--bg-surface);
+    border: 1px solid var(--primary);
+    border-radius: var(--radius-md);
+    animation: slideIn 0.2s ease;
+}
+
+.bulk-label {
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--primary);
+}
+
+.bulk-actions {
+    display: flex;
+    gap: 8px;
+}
+
+.bulk-actions .button {
+    font-size: 12px;
+    padding: 6px 14px;
+}
+
+.bulk-actions .delete-button {
+    background: var(--error);
+    color: white;
+    border-color: var(--error);
+}
+
+.bulk-actions .delete-button:hover {
+    background: var(--error-hover);
+    box-shadow: 0 0 14px rgba(255,71,87,0.3);
+}
+
 /* ===== MODAL ===== */
 .modal {
   display: none;
@@ -1245,7 +1298,7 @@ th.sortable.desc:hover::after {
   .header nav, .header-right, .filter-section, .add-item-section,
   .theme-toggle, .action-button, .archive-button, .edit-button, .bought-button,
   .export-btn, .logout-btn, .admin-nav, .report-nav, .back-btn,
-  .modal, .toast-container, .loading-overlay, .search-container,
+  .modal, .toast-container, .loading-overlay, .search-container, .bulk-bar, .select-col,
   .create-user-section, .admin-create-user-section, .form-row, .admin-form-row,
   .filter-row, .report-filter-row, .button, .button-secondary { display: none !important; }
   .container { max-width: 100%; margin: 0; padding: 0; }
@@ -1279,6 +1332,8 @@ th.sortable.desc:hover::after {
 
   .filter-section { flex-direction: column; align-items: stretch; }
   .filter-buttons { justify-content: center; }
+  .bulk-bar { flex-direction: column; text-align: center; }
+  .bulk-actions { flex-wrap: wrap; justify-content: center; }
 
   .admin-header { flex-direction: column; gap: 12px; text-align: center; }
   .report-header { flex-direction: column; gap: 12px; text-align: center; }
@@ -1298,7 +1353,44 @@ th.sortable.desc:hover::after {
   .login-container { margin: 40px auto; padding: 24px; }
 }
 
-@media (max-width: 480px) {
-  .table-container { overflow-x: auto; }
-  th, td { white-space: nowrap; }
+/* ===== MOBILE CARD LAYOUT (shopping list only) ===== */
+@media (max-width: 640px) {
+  #shopping-table, #shopping-table thead, #shopping-table tbody, #shopping-table tr,
+  #shopping-table th, #shopping-table td { display: block; }
+  #shopping-table thead { display: none; }
+  #shopping-table tr {
+    background: var(--bg-surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-md);
+    padding: 12px;
+    margin-bottom: 12px;
+  }
+  #shopping-table td {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 8px 0;
+    border-bottom: 1px solid var(--border);
+    gap: 8px;
+    white-space: normal;
+    font-size: 14px;
+  }
+  #shopping-table td:last-of-type { border-bottom: none; justify-content: flex-start; gap: 6px; flex-wrap: wrap; }
+  #shopping-table td::before {
+    content: attr(data-label);
+    font-weight: 600;
+    color: var(--text-secondary);
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 0.3px;
+    flex-shrink: 0;
+  }
+  #shopping-table td.select-col {
+    padding: 0 0 8px 0;
+    border-bottom: 1px solid var(--border);
+    margin-bottom: 4px;
+  }
+  #shopping-table td.select-col::before { content: 'Select'; }
+  .price-input, .quantity-input { width: 80px; }
+  .total-section { flex-direction: column; text-align: center; gap: 6px; }
 }

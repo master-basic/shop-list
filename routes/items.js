@@ -143,4 +143,15 @@ router.put('/:id/restore', requireAuth, async (req, res) => {
     }
 });
 
+router.delete('/:id/hard-delete', requireAuth, async (req, res) => {
+    try {
+        const itemId = req.params.id;
+        await db.deleteItem(itemId);
+        res.json({ id: itemId, deleted: true });
+    } catch (error) {
+        console.error('Error deleting item:', error);
+        res.status(500).json({ error: 'Internal server error' });
+    }
+});
+
 module.exports = router;

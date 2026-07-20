@@ -6,7 +6,7 @@ if (typeof module !== 'undefined' && module.exports) {
 }
 
 // Toast notification system
-function showToast(message, type = 'info', duration = 3000) {
+function showToast(message, type = 'info', duration = 3000, action = null) {
     // Remove existing toast
     const existingToast = document.querySelector('.toast');
     if (existingToast) {
@@ -49,8 +49,22 @@ function showToast(message, type = 'info', duration = 3000) {
                 font-size: 20px;
                 cursor: pointer;
                 opacity: 0.8;
+                margin-left: auto;
             }
             .toast-close:hover { opacity: 1; }
+            .toast-action {
+                background: rgba(255,255,255,0.2);
+                border: 1px solid rgba(255,255,255,0.3);
+                border-radius: 4px;
+                color: white;
+                padding: 4px 12px;
+                font-size: 13px;
+                font-weight: 600;
+                cursor: pointer;
+                transition: background 0.2s;
+                white-space: nowrap;
+            }
+            .toast-action:hover { background: rgba(255,255,255,0.3); }
         `;
         document.head.appendChild(style);
     }
@@ -64,14 +78,26 @@ function showToast(message, type = 'info', duration = 3000) {
     `;
     document.body.appendChild(toast);
 
+    if (action) {
+        const actionBtn = document.createElement('button');
+        actionBtn.className = 'toast-action';
+        actionBtn.textContent = action.label;
+        actionBtn.onclick = () => {
+            action.callback();
+            toast.remove();
+        };
+        toast.insertBefore(actionBtn, toast.querySelector('.toast-close'));
+    }
+
     // Auto-remove after duration
-    setTimeout(() => {
+    const autoTimer = setTimeout(() => {
         toast.style.animation = 'slideIn 0.3s ease reverse';
         setTimeout(() => toast.remove(), 300);
     }, duration);
 
-    // Close on button click
+    // Close on button click — cancel auto-timer so it doesn't double-remove
     toast.querySelector('.toast-close').addEventListener('click', () => {
+        clearTimeout(autoTimer);
         toast.remove();
     });
 }
