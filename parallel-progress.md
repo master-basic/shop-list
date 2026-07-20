@@ -50,7 +50,7 @@ D:\Repos\shop-list\
 | P1 | Fix editUser: accept `req.body.username` for rename | `app.js`, `db.js` | ✅ Completed |
 | P1 | Add un-archive endpoint + db function | `app.js`, `db.js`, `script.js` | ✅ Completed |
 | P1 | Add Helmet security headers middleware | `app.js`, `package.json` | ✅ Completed |
-| P2 | Split app.js into routes/middleware layers | `routes/`, `middleware/` | ⬜ Pending |
+| P2 | Split app.js into routes/middleware layers | `routes/`, `middleware/`, `app.js` | ✅ Completed |
 
 ### Qwen Tasks (frontend, UX, polish)
 
@@ -60,6 +60,8 @@ D:\Repos\shop-list\
 | P0 | Add `confirm()` dialog before archive in main list | `script.js` | Qwen ✅ | Completed |
 | P1 | Fix `formatCurrency` to use decimal format with AZN prefix | `utils.js` | Qwen ✅ | Completed |
 | P1 | Remove duplicate `formatDate()` from `report.js` | `report.js` | Qwen ✅ | Completed |
+| P1 | Fix XSS in `admin.js` user table | `admin.js` | Qwen ✅ | Completed |
+| P1 | Fix XSS in `report.js` item table and buyer summary | `report.js` | Qwen ✅ | Completed |
 | P1 | Fix formatCurrency locale from en-US to az-AZ | `utils.js` | Nothing |
 | P1 | Remove duplicate `formatDate()` from report.js (use utils.js version) | `report.js` | Nothing |
 | P1 | Remove dead code: `populateItemSelect`, `filterItems`, `selectItem`, `updateItemList` | `script.js` | Nothing |
@@ -114,3 +116,4 @@ When done:
 | Session | DeepSeek | P1: un-archive route in app.js + frontend Restore button ✅ |
 | Session | DeepSeek | P1: Helmet security headers middleware ✅ |
 | Session | DeepSeek | P1: All four P1 tasks done — commit 6eb66b6 ✅ |
+| Session | DeepSeek | P2: Split app.js into routes/ + middleware/ — app.js 337→49 lines ✅ |

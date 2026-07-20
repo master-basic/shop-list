@@ -78,14 +78,31 @@ function renderUserTable(users) {
     users.forEach(user => {
         const row = document.createElement('tr');
         row.dataset.username = user.username;
-        row.innerHTML = `
-            <td>${user.username}</td>
-            <td>${user.isAdmin ? '<span class="badge badge-primary">Admin</span>' : '<span class="badge badge-secondary">User</span>'}</td>
-            <td>
-                <button class="action-btn edit-btn" onclick="editUser('${user.username}')">Edit</button>
-                <button class="action-btn delete-btn" onclick="deleteUser('${user.username}')">Delete</button>
-            </td>
-        `;
+        
+        const tdUsername = document.createElement('td');
+        tdUsername.textContent = user.username;
+        
+        const tdRole = document.createElement('td');
+        tdRole.innerHTML = user.isAdmin ? '<span class="badge badge-primary">Admin</span>' : '<span class="badge badge-secondary">User</span>';
+        
+        const tdActions = document.createElement('td');
+        const btnEdit = document.createElement('button');
+        btnEdit.className = 'action-btn edit-btn';
+        btnEdit.textContent = 'Edit';
+        btnEdit.onclick = () => editUser(user.username);
+        
+        const btnDelete = document.createElement('button');
+        btnDelete.className = 'action-btn delete-btn';
+        btnDelete.textContent = 'Delete';
+        btnDelete.onclick = () => deleteUser(user.username);
+        
+        tdActions.appendChild(btnEdit);
+        tdActions.appendChild(btnDelete);
+        
+        row.appendChild(tdUsername);
+        row.appendChild(tdRole);
+        row.appendChild(tdActions);
+        
         tableBody.appendChild(row);
     });
 }

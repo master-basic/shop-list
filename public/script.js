@@ -412,6 +412,8 @@ async function markAsBought(itemId) {
 
 // Function to archive an item from the list
 async function archiveItem(itemId) {
+    if (!confirm('Are you sure you want to archive this item?')) return;
+    
     try {
         const response = await fetch(`/api/items/${itemId}`, {
             method: 'DELETE'

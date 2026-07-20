@@ -163,20 +163,56 @@ function renderReportTable(items) {
         const tr = document.createElement('tr');
         tr.dataset.id = item.id;
         const isBought = !!item.bought_date;
-        tr.innerHTML = `
-            <td>${item.name}</td>
-            <td>${formatDate(item.date)}</td>
-            <td>${item.bought_date ? formatDate(item.bought_date) : '-'}</td>
-            <td>${item.category || '-'}</td>
-            <td>${formatCurrency(item.price)}</td>
-            <td>${item.quantity}</td>
-            <td>${formatCurrency(item.price * item.quantity)}</td>
-            <td>${item.bought_by || '-'}</td>
-            <td class="actions">
-                <button class="action-button ${isBought ? 'bought-button bought' : 'bought-button'}" onclick="toggleBought(this)">${isBought ? 'Bought' : 'Not Bought'}</button>
-                <button class="action-button delete-button" onclick="deleteItem('${item.id}')">Delete</button>
-            </td>
-        `;
+        
+        const tdName = document.createElement('td');
+        tdName.textContent = item.name;
+        
+        const tdDate = document.createElement('td');
+        tdDate.textContent = formatDate(item.date);
+        
+        const tdBoughtDate = document.createElement('td');
+        tdBoughtDate.textContent = item.bought_date ? formatDate(item.bought_date) : '-';
+        
+        const tdCategory = document.createElement('td');
+        tdCategory.textContent = item.category || '-';
+        
+        const tdPrice = document.createElement('td');
+        tdPrice.textContent = formatCurrency(item.price);
+        
+        const tdQuantity = document.createElement('td');
+        tdQuantity.textContent = item.quantity;
+        
+        const tdTotalPrice = document.createElement('td');
+        tdTotalPrice.textContent = formatCurrency(item.price * item.quantity);
+        
+        const tdBoughtBy = document.createElement('td');
+        tdBoughtBy.textContent = item.bought_by || '-';
+        
+        const tdActions = document.createElement('td');
+        tdActions.className = 'actions';
+        const btnToggle = document.createElement('button');
+        btnToggle.className = `action-button ${isBought ? 'bought-button bought' : 'bought-button'}`;
+        btnToggle.textContent = isBought ? 'Bought' : 'Not Bought';
+        btnToggle.onclick = () => toggleBought(btnToggle);
+        
+        const btnDelete = document.createElement('button');
+        btnDelete.className = 'action-button delete-button';
+        btnDelete.textContent = 'Delete';
+        btnDelete.onclick = () => deleteItem(item.id);
+        
+        tdActions.appendChild(btnToggle);
+        tdActions.appendChild(btnDelete);
+        
+        tr.appendChild(tdName);
+        tr.appendChild(tdDate);
+        tr.appendChild(tdBoughtDate);
+        tr.appendChild(tdCategory);
+        tr.appendChild(tdPrice);
+        tr.appendChild(tdQuantity);
+        tr.appendChild(tdTotalPrice);
+        tr.appendChild(tdBoughtBy);
+        tr.appendChild(tdActions);
+        
         tableBody.appendChild(tr);
     });
 }
@@ -209,20 +245,36 @@ function calculateReportStats(items) {
     // Update buyer summary
     const buyerSummaryContainer = document.getElementById('buyer-summary');
     if (buyerSummaryContainer) {
-        let buyerSummaryHTML = '<h2>Buyer Summary</h2><div class="buyer-items">';
+        const buyerSummaryDiv = document.createElement('div');
+        buyerSummaryDiv.className = 'buyer-items';
+        
+        const buyerSummaryTitle = document.createElement('h2');
+        buyerSummaryTitle.textContent = 'Buyer Summary';
+        buyerSummaryDiv.appendChild(buyerSummaryTitle);
+        
         for (const [buyer, amount] of Object.entries(spendingByBuyer)) {
-            buyerSummaryHTML += `
-                <div class="buyer-item">
-                    <div class="buyer-item-name">${buyer}</div>
-                    <div class="buyer-item-total">AZN ${amount.toFixed(2)}</div>
-                </div>
-            `;
+            const buyerItem = document.createElement('div');
+            buyerItem.className = 'buyer-item';
+            
+            const buyerItemName = document.createElement('div');
+            buyerItemName.className = 'buyer-item-name';
+            buyerItemName.textContent = buyer;
+            
+            const buyerItemTotal = document.createElement('div');
+            buyerItemTotal.className = 'buyer-item-total';
+            buyerItemTotal.textContent = `AZN ${amount.toFixed(2)}`;
+            
+            buyerItem.appendChild(buyerItemName);
+            buyerItem.appendChild(buyerItemTotal);
+            buyerSummaryDiv.appendChild(buyerItem);
         }
-        buyerSummaryHTML += '</div>';
-        buyerSummaryContainer.innerHTML = buyerSummaryHTML;
+        
+        buyerSummaryContainer.appendChild(buyerSummaryDiv);
         
         if (Object.keys(spendingByBuyer).length === 0) {
-            buyerSummaryContainer.innerHTML = '<p>No buyer data available</p>';
+            const noDataP = document.createElement('p');
+            noDataP.textContent = 'No buyer data available';
+            buyerSummaryContainer.appendChild(noDataP);
         }
     }
 }
