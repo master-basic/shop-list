@@ -16,7 +16,9 @@ document.getElementById('month-name').textContent = getMonthName();
 
 async function fetchItems() {
     try {
-        const response = await fetch('/api/items');
+        const showArchived = document.querySelector('.filter-buttons button[onclick*="showArchivedItems"]')?.classList.contains('active');
+        const url = showArchived ? '/api/items?includeArchived=true' : '/api/items';
+        const response = await fetch(url);
         if (!response.ok) {
             throw new Error(`Server responded with ${response.status}: ${response.statusText}`);
         }
@@ -69,21 +71,57 @@ async function fetchItems() {
                 item.quantity : 
                 `<input type="number" value="${item.quantity}" min="1" step="1" onchange="updateQuantity(${item.id}, this.value)" class="quantity-input">`;
 
-            tr.innerHTML = `
-                <td class="${item.bought_date ? 'bought' : ''}">${item.name}</td>
-                <td>${itemDate}</td>
-                <td>${boughtDate}</td>
-                <td>${item.category || 'N/A'}</td>
-                <td>${priceField}</td>
-                <td>${quantityField}</td>
-                <td>${totalPrice.toFixed(2)}</td>
-                <td>${item.bought_by || ''}</td>
-                <td>
-                    ${!item.bought_date ? `<button class="action-button bought-button" onclick="markAsBought(${item.id})">Bought</button>` : ''}
-                    <button class="action-button archive-button" onclick="archiveItem(${item.id})">Archive</button>
-                    ${!item.bought_date ? `<button class="action-button edit-button" onclick="enableEditing(this.closest('tr'))">Edit</button>` : ''}
-                </td>
+            const tdName = document.createElement('td');
+            tdName.className = item.bought_date ? 'bought' : '';
+            tdName.textContent = item.name;
+            
+            const tdDate = document.createElement('td');
+            tdDate.textContent = itemDate;
+            
+            const tdBoughtDate = document.createElement('td');
+            tdBoughtDate.textContent = boughtDate;
+            
+            const tdCategory = document.createElement('td');
+            tdCategory.textContent = item.category || 'N/A';
+            
+            const tdPrice = document.createElement('td');
+            tdPrice.innerHTML = priceField;
+            
+            const tdQuantity = document.createElement('td');
+            tdQuantity.innerHTML = quantityField;
+            
+            const tdTotalPrice = document.createElement('td');
+            tdTotalPrice.textContent = totalPrice.toFixed(2);
+            
+            const tdBoughtBy = document.createElement('td');
+            tdBoughtBy.textContent = item.bought_by || '';
+            
+            const tdActions = document.createElement('td');
+            tdActions.innerHTML = `
+                ${!item.bought_date ? `<button class="action-button bought-button" onclick="markAsBought(${item.id})">Bought</button>` : ''}
+                <button class="action-button archive-button" onclick="archiveItem(${item.id})">Archive</button>
+                ${!item.bought_date ? `<button class="action-button edit-button" onclick="enableEditing(this.closest('tr'))">Edit</button>` : ''}
             `;
+            
+            tdActions.addEventListener('click', (e) => {
+                if (e.target.classList.contains('archive-button')) {
+                    if (!confirm('Are you sure you want to archive this item?')) {
+                        e.preventDefault();
+                        return;
+                    }
+                }
+            }, true);
+            
+            tr.appendChild(tdName);
+            tr.appendChild(tdDate);
+            tr.appendChild(tdBoughtDate);
+            tr.appendChild(tdCategory);
+            tr.appendChild(tdPrice);
+            tr.appendChild(tdQuantity);
+            tr.appendChild(tdTotalPrice);
+            tr.appendChild(tdBoughtBy);
+            tr.appendChild(tdActions);
+            
             list.appendChild(tr);
         });
         
@@ -191,16 +229,24 @@ function enableEditing(row) {
     quantityInput.className = 'edit-quantity-input';
     quantityInput.placeholder = 'Quantity';
     
-    cells[0].innerHTML = nameInput;
-    cells[3].innerHTML = categoryInput;
-    cells[4].innerHTML = priceInput;
-    cells[5].innerHTML = quantityInput;
+    cells[0].replaceWith(nameInput);
+    cells[3].replaceWith(categoryInput);
+    cells[4].replaceWith(priceInput);
+    cells[5].replaceWith(quantityInput);
     
     const actionsCell = cells[cells.length - 1];
-    actionsCell.innerHTML = `
-        <button class="action-button bought-button" onclick="saveEditing(${row.dataset.id})">Save</button>
-        <button class="action-button archive-button" onclick="cancelEditing(${row.dataset.id})">Cancel</button>
-    `;
+    const btnBought = document.createElement('button');
+    btnBought.className = 'action-button bought-button';
+    btnBought.textContent = 'Save';
+    btnBought.onclick = () => saveEditing(row.dataset.id);
+    
+    const btnCancel = document.createElement('button');
+    btnCancel.className = 'action-button archive-button';
+    btnCancel.textContent = 'Cancel';
+    btnCancel.onclick = () => cancelEditing(row.dataset.id);
+    
+    actionsCell.replaceWith(btnBought);
+    actionsCell.appendChild(btnCancel);
 }
 
 // Function to cancel editing of a row
@@ -374,11 +420,29 @@ async function archiveItem(itemId) {
             const error = await response.json();
             throw new Error(error.error || 'Failed to archive item');
         }
-        showToast('Item archived successfully', 'success');
+        showToast('Item archived', 'success');
         await fetchItems();
     } catch (error) {
         console.error('Error archiving item:', error);
         showToast(error.message || 'Failed to archive item', 'error');
+    }
+}
+
+// Function to restore an archived item
+async function restoreItem(itemId) {
+    try {
+        const response = await fetch(`/api/items/${itemId}/restore`, {
+            method: 'PUT'
+        });
+        if (!response.ok) {
+            const error = await response.json();
+            throw new Error(error.error || 'Failed to restore item');
+        }
+        showToast('Item restored', 'success');
+        await fetchItems();
+    } catch (error) {
+        console.error('Error restoring item:', error);
+        showToast(error.message || 'Failed to restore item', 'error');
     }
 }
 
@@ -426,22 +490,57 @@ async function showBoughtItems(event) {
             const boughtDate = item.bought_date ? new Date(item.bought_date).toLocaleString('en-GB', { hour12: false }) : '';
             const totalPrice = item.price * item.quantity;
             totalAmount += totalPrice;
-            tr.innerHTML = `
-                <td class="bought">${item.name}</td>
-                <td>${itemDate}</td>
-                <td>${boughtDate}</td>
-                <td>${item.category || 'N/A'}</td>
-                <td>${item.price}</td>
-                <td>${item.quantity}</td>
-                <td>${totalPrice.toFixed(2)}</td>
-                <td>${item.bought_by || ''}</td>
-                <td>
-                    <button class="action-button archive-button" onclick="archiveItem(${item.id})">Archive</button>
-                </td>
-            `;
+            
+            const tdName = document.createElement('td');
+            tdName.className = 'bought';
+            tdName.textContent = item.name;
+            
+            const tdDate = document.createElement('td');
+            tdDate.textContent = itemDate;
+            
+            const tdBoughtDate = document.createElement('td');
+            tdBoughtDate.textContent = boughtDate;
+            
+            const tdCategory = document.createElement('td');
+            tdCategory.textContent = item.category || 'N/A';
+            
+            const tdPrice = document.createElement('td');
+            tdPrice.textContent = item.price;
+            
+            const tdQuantity = document.createElement('td');
+            tdQuantity.textContent = item.quantity;
+            
+            const tdTotalPrice = document.createElement('td');
+            tdTotalPrice.textContent = totalPrice.toFixed(2);
+            
+            const tdBoughtBy = document.createElement('td');
+            tdBoughtBy.textContent = item.bought_by || '';
+            
+            const tdActions = document.createElement('td');
+            const btnArchive = document.createElement('button');
+            btnArchive.className = 'action-button archive-button';
+            btnArchive.textContent = 'Archive';
+            btnArchive.onclick = () => archiveItem(item.id);
+            tdActions.appendChild(btnArchive);
+            
+            tr.appendChild(tdName);
+            tr.appendChild(tdDate);
+            tr.appendChild(tdBoughtDate);
+            tr.appendChild(tdCategory);
+            tr.appendChild(tdPrice);
+            tr.appendChild(tdQuantity);
+            tr.appendChild(tdTotalPrice);
+            tr.appendChild(tdBoughtBy);
+            tr.appendChild(tdActions);
+            
             list.appendChild(tr);
         });
         document.getElementById('total-amount').textContent = `AZN ${totalAmount.toFixed(2)}`;
+        document.getElementById('total-items').textContent = list.children.length;
+        document.getElementById('purchased-count').textContent = '—';
+        if (list.children.length === 0) {
+            list.innerHTML = '<tr><td colspan="9" class="empty-state">No bought items found</td></tr>';
+        }
     } catch (error) {
         console.error('Error showing bought items:', error);
         showToast('Failed to load bought items', 'error');
@@ -471,24 +570,69 @@ async function showNotBoughtItems(event) {
             const itemDate = new Date(item.date).toLocaleString('en-GB', { hour12: false });
             const totalPrice = item.price * item.quantity;
             totalAmount += totalPrice;
-            tr.innerHTML = `
-                <td>${item.name}</td>
-                <td>${itemDate}</td>
-                <td></td>
-                <td>${item.category || 'N/A'}</td>
-                <td>${item.price}</td>
-                <td>${item.quantity}</td>
-                <td>${totalPrice.toFixed(2)}</td>
-                <td></td>
-                <td>
-                    <button class="action-button bought-button" onclick="markAsBought(${item.id})">Bought</button>
-                    <button class="action-button archive-button" onclick="archiveItem(${item.id})">Archive</button>
-                    <button class="action-button edit-button" onclick="enableEditing(this.closest('tr'))">Edit</button>
-                </td>
-            `;
+            
+            const tdName = document.createElement('td');
+            tdName.textContent = item.name;
+            
+            const tdDate = document.createElement('td');
+            tdDate.textContent = itemDate;
+            
+            const tdBoughtDate = document.createElement('td');
+            tdBoughtDate.textContent = '';
+            
+            const tdCategory = document.createElement('td');
+            tdCategory.textContent = item.category || 'N/A';
+            
+            const tdPrice = document.createElement('td');
+            tdPrice.textContent = item.price;
+            
+            const tdQuantity = document.createElement('td');
+            tdQuantity.textContent = item.quantity;
+            
+            const tdTotalPrice = document.createElement('td');
+            tdTotalPrice.textContent = totalPrice.toFixed(2);
+            
+            const tdBoughtBy = document.createElement('td');
+            tdBoughtBy.textContent = '';
+            
+            const tdActions = document.createElement('td');
+            const btnBought = document.createElement('button');
+            btnBought.className = 'action-button bought-button';
+            btnBought.textContent = 'Bought';
+            btnBought.onclick = () => markAsBought(item.id);
+            
+            const btnArchive = document.createElement('button');
+            btnArchive.className = 'action-button archive-button';
+            btnArchive.textContent = 'Archive';
+            btnArchive.onclick = () => archiveItem(item.id);
+            
+            const btnEdit = document.createElement('button');
+            btnEdit.className = 'action-button edit-button';
+            btnEdit.textContent = 'Edit';
+            btnEdit.onclick = () => enableEditing(tr);
+            
+            tdActions.appendChild(btnBought);
+            tdActions.appendChild(btnArchive);
+            tdActions.appendChild(btnEdit);
+            
+            tr.appendChild(tdName);
+            tr.appendChild(tdDate);
+            tr.appendChild(tdBoughtDate);
+            tr.appendChild(tdCategory);
+            tr.appendChild(tdPrice);
+            tr.appendChild(tdQuantity);
+            tr.appendChild(tdTotalPrice);
+            tr.appendChild(tdBoughtBy);
+            tr.appendChild(tdActions);
+            
             list.appendChild(tr);
         });
         document.getElementById('total-amount').textContent = `AZN ${totalAmount.toFixed(2)}`;
+        document.getElementById('total-items').textContent = list.children.length;
+        document.getElementById('purchased-count').textContent = '—';
+        if (list.children.length === 0) {
+            list.innerHTML = '<tr><td colspan="9" class="empty-state">No unbought items found</td></tr>';
+        }
     } catch (error) {
         console.error('Error showing not bought items:', error);
         showToast('Failed to load not bought items', 'error');
@@ -503,7 +647,7 @@ async function showArchivedItems(event) {
     
     const activeCategory = document.querySelector('.category-chip.active')?.dataset.category || '';
     try {
-        const response = await fetch('/api/items');
+        const response = await fetch('/api/items?includeArchived=true');
         if (!response.ok) {
             throw new Error('Failed to fetch items');
         }
@@ -519,22 +663,63 @@ async function showArchivedItems(event) {
             const boughtDate = item.bought_date ? new Date(item.bought_date).toLocaleString('en-GB', { hour12: false }) : '';
             const totalPrice = item.price * item.quantity;
             totalAmount += totalPrice;
-            tr.innerHTML = `
-                <td class="bought">${item.name}</td>
-                <td>${itemDate}</td>
-                <td>${boughtDate}</td>
-                <td>${item.category || 'N/A'}</td>
-                <td>${item.price}</td>
-                <td>${item.quantity}</td>
-                <td>${totalPrice.toFixed(2)}</td>
-                <td>${item.bought_by || ''}</td>
-                <td>
-                    <button class="action-button edit-button" onclick="enableEditing(this.closest('tr'))">Edit</button>
-                </td>
-            `;
+            
+            const tdName = document.createElement('td');
+            tdName.className = 'bought';
+            tdName.textContent = item.name;
+            
+            const tdDate = document.createElement('td');
+            tdDate.textContent = itemDate;
+            
+            const tdBoughtDate = document.createElement('td');
+            tdBoughtDate.textContent = boughtDate;
+            
+            const tdCategory = document.createElement('td');
+            tdCategory.textContent = item.category || 'N/A';
+            
+            const tdPrice = document.createElement('td');
+            tdPrice.textContent = item.price;
+            
+            const tdQuantity = document.createElement('td');
+            tdQuantity.textContent = item.quantity;
+            
+            const tdTotalPrice = document.createElement('td');
+            tdTotalPrice.textContent = totalPrice.toFixed(2);
+            
+            const tdBoughtBy = document.createElement('td');
+            tdBoughtBy.textContent = item.bought_by || '';
+            
+            const tdActions = document.createElement('td');
+            tdActions.className = 'actions';
+            const btnRestore = document.createElement('button');
+            btnRestore.className = 'action-button bought-button';
+            btnRestore.textContent = 'Restore';
+            btnRestore.onclick = () => restoreItem(item.id);
+            tdActions.appendChild(btnRestore);
+            const btnEdit = document.createElement('button');
+            btnEdit.className = 'action-button edit-button';
+            btnEdit.textContent = 'Edit';
+            btnEdit.onclick = () => enableEditing(tr);
+            tdActions.appendChild(btnEdit);
+            
+            tr.appendChild(tdName);
+            tr.appendChild(tdDate);
+            tr.appendChild(tdBoughtDate);
+            tr.appendChild(tdCategory);
+            tr.appendChild(tdPrice);
+            tr.appendChild(tdQuantity);
+            tr.appendChild(tdTotalPrice);
+            tr.appendChild(tdBoughtBy);
+            tr.appendChild(tdActions);
+            
             list.appendChild(tr);
         });
         document.getElementById('total-amount').textContent = `AZN ${totalAmount.toFixed(2)}`;
+        document.getElementById('total-items').textContent = list.children.length;
+        document.getElementById('purchased-count').textContent = '—';
+        if (list.children.length === 0) {
+            list.innerHTML = '<tr><td colspan="9" class="empty-state">No archived items found</td></tr>';
+        }
     } catch (error) {
         console.error('Error showing archived items:', error);
         showToast('Failed to load archived items', 'error');

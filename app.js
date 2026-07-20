@@ -3,6 +3,7 @@ const express = require('express');
 const path = require('path');
 const cookieParser = require('cookie-parser');
 const morgan = require('morgan');
+const helmet = require('helmet');
 const rateLimit = require('express-rate-limit');
 const fs = require('fs');
 const db = require('./db');
@@ -17,14 +18,11 @@ app.use(express.json());
 app.use(cookieParser());
 app.use(express.static('public'));
 
-// Security headers
-app.use((req, res, next) => {
-    res.setHeader('X-Content-Type-Options', 'nosniff');
-    res.setHeader('X-Frame-Options', 'DENY');
-    res.setHeader('X-XSS-Protection', '1; mode=block');
-    res.setHeader('Referrer-Policy', 'strict-origin-when-cross-origin');
-    next();
-});
+// Security headers (Helmet)
+app.use(helmet({
+    contentSecurityPolicy: false,
+    crossOriginResourcePolicy: { policy: 'cross-origin' }
+}));
 
 // Rate limiter for login endpoint
 const loginLimiter = rateLimit({
@@ -205,6 +203,18 @@ app.delete('/api/items/:id', requireAuth, async (req, res) => {
     }
 });
 
+// Route to un-archive (restore) an item
+app.put('/api/items/:id/restore', requireAuth, async (req, res) => {
+    try {
+        const itemId = req.params.id;
+        await db.unarchiveItem(itemId);
+        res.json({ id: itemId, archived: false });
+    } catch (error) {
+        console.error('Error restoring item:', error);
+        res.status(500).json({ error: 'Internal server error' });
+    }
+});
+
 // Route to authenticate a user
 app.post('/api/login', loginLimiter, async (req, res) => {
     try {
@@ -287,12 +297,13 @@ app.post('/api/users', requireAdmin, async (req, res) => {
     }
 });
 
-// Route to update a user's password and admin status (admin only)
+// Route to update a user's password, admin status, and optionally rename (admin only)
 app.put('/api/users/:username', requireAdmin, async (req, res) => {
     try {
         const username = req.params.username;
         const { password, isAdmin } = req.body;
-        await db.updateUser(username, password, isAdmin);
+        const newUsername = req.body.newUsername || req.body.username || null;
+        await db.updateUser(username, password, isAdmin, newUsername);
         res.json({ success: true });
     } catch (error) {
         console.error('Error updating user:', error);

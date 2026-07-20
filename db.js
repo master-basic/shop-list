@@ -114,8 +114,8 @@ async function getItems(includeArchived) {
     try {
         conn = await pool.getConnection();
         const query = includeArchived ?
-          "SELECT id, name, date, bought_date, category, price, quantity, bought_by, created_by FROM items" :
-          "SELECT id, name, date, bought_date, category, price, quantity, bought_by, created_by FROM items WHERE archived = 0";
+          "SELECT id, name, date, bought_date, category, price, quantity, bought_by, created_by, archived FROM items" :
+          "SELECT id, name, date, bought_date, category, price, quantity, bought_by, created_by, archived FROM items WHERE archived = 0";
         const rows = await conn.query(query);
         return rows;
     } finally {
@@ -129,28 +129,31 @@ async function getFilteredItems(startDate, endDate, category, includeArchived) {
     try {
         conn = await pool.getConnection();
 
-        let query = includeArchived ?
-            "SELECT id, name, date, bought_date, category, price, quantity, bought_by, created_by FROM items" :
-            "SELECT id, name, date, bought_date, category, price, quantity, bought_by, created_by FROM items WHERE archived = 0";
-
+        let query = "SELECT id, name, date, bought_date, category, price, quantity, bought_by, created_by, archived FROM items";
         const params = [];
+        const conditions = [];
 
-        if (!includeArchived && startDate) {
-            query += " AND date >= ?";
-            params.push(startDate);
-        } else if (includeArchived && startDate) {
-            query += " WHERE date >= ?";
+        if (!includeArchived) {
+            conditions.push("archived = 0");
+        }
+
+        if (startDate) {
+            conditions.push("date >= ?");
             params.push(startDate);
         }
 
         if (endDate) {
-            query += " AND date <= ?";
+            conditions.push("date <= ?");
             params.push(endDate);
         }
 
         if (category && category !== 'all') {
-            query += " AND category = ?";
+            conditions.push("category = ?");
             params.push(category);
+        }
+
+        if (conditions.length > 0) {
+            query += " WHERE " + conditions.join(" AND ");
         }
 
         const rows = await conn.query(query, params);
@@ -230,6 +233,18 @@ async function archiveItem(itemId) {
     }
 }
 
+// Un-archive an item (restore)
+async function unarchiveItem(itemId) {
+    let conn;
+    try {
+        conn = await pool.getConnection();
+        const query = `UPDATE items SET archived = FALSE WHERE id = ?`;
+        await conn.query(query, [itemId]);
+    } finally {
+        if (conn) conn.release();
+    }
+}
+
 // Authenticate a user with password verification
 async function authenticateUser(username, password) {
     let conn;
@@ -295,21 +310,36 @@ async function createUser(username, password, isAdmin) {
 }
 
 // Update a user's password and admin status
-async function updateUser(username, password, isAdmin) {
+async function updateUser(username, password, isAdmin, newUsername) {
     let conn;
     try {
         conn = await pool.getConnection();
 
-        if (password) {
-            // Update password and isAdmin
-            const hashedPassword = await bcrypt.hash(password, 10);
-            const query = `UPDATE users SET password = ?, isAdmin = ?, updated_at = NOW() WHERE username = ?`;
-            await conn.query(query, [hashedPassword, isAdmin, username]);
+        let query;
+        const params = [];
+
+        if (newUsername && newUsername !== username) {
+            // Rename user: update username + isAdmin + optionally password
+            if (password) {
+                const hashedPassword = await bcrypt.hash(password, 10);
+                query = `UPDATE users SET username = ?, password = ?, isAdmin = ?, updated_at = NOW() WHERE username = ?`;
+                params.push(newUsername, hashedPassword, isAdmin, username);
+            } else {
+                query = `UPDATE users SET username = ?, isAdmin = ?, updated_at = NOW() WHERE username = ?`;
+                params.push(newUsername, isAdmin, username);
+            }
         } else {
-            // Update only isAdmin, keep existing password
-            const query = `UPDATE users SET isAdmin = ?, updated_at = NOW() WHERE username = ?`;
-            await conn.query(query, [isAdmin, username]);
+            if (password) {
+                const hashedPassword = await bcrypt.hash(password, 10);
+                query = `UPDATE users SET password = ?, isAdmin = ?, updated_at = NOW() WHERE username = ?`;
+                params.push(hashedPassword, isAdmin, username);
+            } else {
+                query = `UPDATE users SET isAdmin = ?, updated_at = NOW() WHERE username = ?`;
+                params.push(isAdmin, username);
+            }
         }
+
+        await conn.query(query, params);
     } catch (error) {
         console.error('Error updating user:', error);
         throw error;
@@ -394,6 +424,7 @@ module.exports = {
     markAsBought,
     unbuyItem,
     archiveItem,
+    unarchiveItem,
     authenticateUser,
     createUser,
     updateUser,

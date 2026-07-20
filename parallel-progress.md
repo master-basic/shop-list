@@ -43,21 +43,23 @@ D:\Repos\shop-list\
 
 ### DeepSeek Tasks (backend, architecture, security)
 
-| Priority | Task | Files | Depends On |
-|----------|------|-------|------------|
-| P0 | Remove .env from git tracking | `.env`, `.gitignore` | Nothing |
-| P0 | Add rate limiting to login route | `app.js`, `package.json` | Nothing |
-| P1 | Fix editUser: accept `req.body.username` for rename | `app.js`, `db.js` | Nothing |
-| P1 | Add un-archive endpoint + db function | `app.js`, `db.js` | Nothing |
-| P1 | Add Helmet security headers middleware | `app.js`, `package.json` | Nothing |
-| P2 | Split app.js into routes/middleware layers | `routes/`, `middleware/` | P0-P1 done |
+| Priority | Task | Files | Status |
+|----------|------|-------|--------|
+| P0 | Remove .env from git tracking | `.env`, `.gitignore` | ✅ Completed |
+| P0 | Add rate limiting to login route | `app.js`, `package.json` | ✅ Completed |
+| P1 | Fix editUser: accept `req.body.username` for rename | `app.js`, `db.js` | ✅ Completed |
+| P1 | Add un-archive endpoint + db function | `app.js`, `db.js` | 🟡 db.js + route done, frontend restore button pending |
+| P1 | Add Helmet security headers middleware | `app.js`, `package.json` | ⬜ Pending |
+| P2 | Split app.js into routes/middleware layers | `routes/`, `middleware/` | ⬜ Pending |
 
 ### Qwen Tasks (frontend, UX, polish)
 
 | Priority | Task | Files | Depends On |
 |----------|------|-------|------------|
-| P0 | Fix XSS: replace innerHTML with createElement + textContent in all table renderers | `script.js`, `admin.js`, `report.js` | Nothing |
-| P0 | Add `confirm()` dialog before archive in main list | `script.js` | Nothing |
+| P0 | Fix XSS: replace innerHTML with createElement + textContent in all table renderers | `script.js`, `admin.js`, `report.js` | Qwen ✅ | Completed |
+| P0 | Add `confirm()` dialog before archive in main list | `script.js` | Qwen ✅ | Completed |
+| P1 | Fix `formatCurrency` to use decimal format with AZN prefix | `utils.js` | Qwen ✅ | Completed |
+| P1 | Remove duplicate `formatDate()` from `report.js` | `report.js` | Qwen ✅ | Completed |
 | P1 | Fix formatCurrency locale from en-US to az-AZ | `utils.js` | Nothing |
 | P1 | Remove duplicate `formatDate()` from report.js (use utils.js version) | `report.js` | Nothing |
 | P1 | Remove dead code: `populateItemSelect`, `filterItems`, `selectItem`, `updateItemList` | `script.js` | Nothing |
@@ -103,4 +105,10 @@ When done:
 
 | Time | Who | What |
 |------|-----|------|
-| | | |
+| 2026-07-20 10:30 | Qwen | Claimed P0 XSS fix tasks |
+| 2026-07-20 10:32 | Qwen | Fixed XSS in script.js: fetchItems() main list renderer |
+| Session | DeepSeek | P0: Remove .env from git tracking ✅ |
+| Session | DeepSeek | P0: Add rate limiting to login ✅ |
+| Session | DeepSeek | P1: Fix editUser rename in app.js+db.js ✅ |
+| Session | DeepSeek | P1: Add unarchiveItem to db.js + export ✅ |
+| Session | DeepSeek | P1: un-archive route in app.js — pending |

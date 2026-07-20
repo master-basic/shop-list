@@ -79,9 +79,10 @@ function showToast(message, type = 'info', duration = 3000) {
 // Format currency (AZN)
 function formatCurrency(amount) {
     return new Intl.NumberFormat('az-AZ', {
-        style: 'currency',
-        currency: 'AZN'
-    }).format(amount);
+        style: 'decimal',
+        minimumFractionDigits: 2,
+        maximumFractionDigits: 2
+    }).format(amount).replace(/\d+\.(\d{2})/, 'AZN $1');
 }
 
 // Format date
