@@ -75,6 +75,7 @@ async function fetchItems() {
             tr.dataset.category = item.category || '';
             tr.dataset.price = item.price;
             tr.dataset.quantity = item.quantity;
+            tr.dataset.notes = item.notes || '';
             const itemDate = new Date(item.date).toLocaleString('en-GB', { hour12: false });
             const boughtDate = item.bought_date ? new Date(item.bought_date).toLocaleString('en-GB', { hour12: false }) : '';
             const totalPrice = item.price * item.quantity;
@@ -105,6 +106,14 @@ async function fetchItems() {
             tdName.dataset.label = 'Item';
             tdName.className = item.bought_date ? 'bought' : '';
             tdName.textContent = item.name;
+            if (item.notes) {
+                tdName.title = item.notes;
+                const noteIcon = document.createElement('span');
+                noteIcon.className = 'note-indicator';
+                noteIcon.textContent = ' 📝';
+                noteIcon.title = item.notes;
+                tdName.appendChild(noteIcon);
+            }
             
             const tdDate = document.createElement('td');
             tdDate.dataset.label = 'Date';
@@ -370,6 +379,7 @@ async function addItem() {
         const itemPrice = parseFloat(document.getElementById('item-price').value) || 0.00;
         const itemQuantity = parseInt(document.getElementById('item-quantity').value) || 1;
         const itemCategory = document.getElementById('item-category').value;
+        const itemNotes = document.getElementById('item-notes').value.trim();
 
         if (!itemName) {
             showToast('Please enter an item name', 'error');
@@ -382,6 +392,7 @@ async function addItem() {
             price: itemPrice,
             quantity: itemQuantity,
             category: itemCategory,
+            notes: itemNotes || null,
             date: now.toISOString().slice(0, 19).replace('T', ' '),
             bought_date: null
         };
@@ -402,6 +413,7 @@ async function addItem() {
         document.getElementById('item-price').value = '';
         document.getElementById('item-quantity').value = '';
         document.getElementById('item-category').value = '';
+        document.getElementById('item-notes').value = '';
 
         hideLoading();
         showToast('Item added successfully!', 'success');
@@ -658,11 +670,41 @@ async function bulkDelete() {
     }
 }
 
+// ===== FREQUENT ITEMS =====
+async function loadFrequentItems() {
+    try {
+        const response = await fetch('/api/items/frequent');
+        if (!response.ok) return;
+        const items = await response.json();
+        const container = document.getElementById('frequent-items');
+        const section = document.getElementById('frequent-section');
+        if (!container || !items.length) {
+            if (section) section.style.display = 'none';
+            return;
+        }
+        container.innerHTML = '';
+        items.forEach(item => {
+            const chip = document.createElement('span');
+            chip.className = 'frequent-chip';
+            chip.innerHTML = `${item.name} <small>(${item.freq})</small>`;
+            chip.title = `${item.category || ''} — AZN ${parseFloat(item.price).toFixed(2)}`;
+            chip.onclick = () => {
+                document.getElementById('item-name').value = item.name;
+                if (item.category) document.getElementById('item-category').value = item.category;
+                document.getElementById('item-name').focus();
+            };
+            container.appendChild(chip);
+        });
+        if (section) section.style.display = 'block';
+    } catch (_) { /* ignore */ }
+}
+
 // Initialize category filter chips, sortable columns, and quick-add keyboard
 document.addEventListener('DOMContentLoaded', () => {
     initCategoryFilter();
     initSortableColumns();
     initQuickAddKeyboard();
+    loadFrequentItems();
 });
 
 function initQuickAddKeyboard() {
@@ -686,6 +728,17 @@ function initQuickAddKeyboard() {
             }
         });
     });
+
+    // Ctrl+Enter on notes textarea submits
+    const notesEl = document.getElementById('item-notes');
+    if (notesEl) {
+        notesEl.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) {
+                e.preventDefault();
+                addItem();
+            }
+        });
+    }
 }
 
 function initSortableColumns() {

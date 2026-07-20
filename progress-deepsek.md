@@ -352,6 +352,27 @@ New file with documented environment variables so new developers know what to co
 - `script.js`: Added `data-label` attribute to every `<td>` in `fetchItems()` (Item, Date, Bought, Category, Price, Qty, Total, Bought By)
 - `styles.css`: At `640px`, `#shopping-table` transforms from table to stacked cards: thead hidden, each `tr` is a card with border + shadow, each `td` is a labeled row using `::before { content: attr(data-label) }` — scoped to `#shopping-table` so admin/report tables stay as tables
 
+#### 10. Item notes / description field
+- `db.js`: Added `notes TEXT DEFAULT NULL` column to both CREATE TABLE statements + ALTER TABLE migration for existing DBs; updated `addItem()`, `updateItem()`, all SELECT queries to include `notes`
+- `middleware/validate.js`: Added `notes` (string, max 1000 chars, optional) to `itemSchema` and `updateItemSchema`
+- `routes/items.js`: POST and PUT handlers pass `notes` through to DB
+- `public/index2.html`: Added `<textarea id="item-notes">` to the add form (full-width via `grid-column: 1 / -1`)
+- `public/script.js`: `addItem()` sends notes, `fetchItems()` shows a `📝` indicator with `title` tooltip on items with notes, row dataset includes `notes` for edit modal
+- `public/editItems.js`: Edit modal includes notes textarea (reads from `row.dataset.notes`); `saveFromForm()` sends notes
+- `public/styles.css`: Styled textarea (matching input styles), `.notes-group` spans full grid width, `.note-indicator` style
+- Quick-add keyboard: Ctrl+Enter on notes textarea submits the form (plain Enter inserts newline)
+
+#### 11. Favorite / frequent items section
+- `db.js`: Added `getFrequentItems(limit = 10)` — groups items by name+category, orders by `COUNT(*) DESC`
+- `routes/items.js`: Added `GET /api/items/frequent` endpoint (public, no auth required)
+- `public/index2.html`: Added `.frequent-section` with `.frequent-items` container (hidden until data loaded)
+- `public/script.js`: `loadFrequentItems()` fetches from `/api/items/frequent`, renders clickable chip badges showing name + frequency count; clicking a chip fills the add form name + category and focuses the name input; called on DOMContentLoaded
+- `public/styles.css`: `.frequent-section` card with `.frequent-chip` pill badges, hover states matching category chip pattern
+
+### Future feature work (not assigned)
+- `script.js`: Added `data-label` attribute to every `<td>` in `fetchItems()` (Item, Date, Bought, Category, Price, Qty, Total, Bought By)
+- `styles.css`: At `640px`, `#shopping-table` transforms from table to stacked cards: thead hidden, each `tr` is a card with border + shadow, each `td` is a labeled row using `::before { content: attr(data-label) }` — scoped to `#shopping-table` so admin/report tables stay as tables
+
 ### Future feature work (not assigned)
 - `index2.html`: Added checkbox column (`<th class="select-col">`) with select-all checkbox; added `.bulk-bar` between filter section and table with buttons for Mark Bought / Archive / Delete / Clear
 - `script.js`: `toggleSelectAll()`, `updateBulkBar()`, `clearSelection()`, `getSelectedIds()`, `bulkBought()`, `bulkArchive()`, `bulkDelete()` — all iterate over checked `[data-id]` checkboxes and call the respective endpoints
@@ -371,8 +392,6 @@ New file with documented environment variables so new developers know what to co
 
 | Category | Task | Priority |
 |----------|------|----------|
-| UX | Favorite/frequent items section | P2 |
-| UX | Item notes/description field | P2 |
 | Security | CSRF protection | P3 |
 | Data | Multiple shopping lists (schema + UI) | P3 |
 | Data | Sharing lists with permissions | P3 |

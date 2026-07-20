@@ -61,9 +61,18 @@
                     <label for="item-quantity">Quantity</label>
                     <input type="number" id="item-quantity" placeholder="1" step="1" min="1" value="1">
                 </div>
-                <button class="button" onclick="addItem()">Add Item</button>
+                <div class="input-group notes-group">
+                    <label for="item-notes">Notes</label>
+                    <textarea id="item-notes" placeholder="Optional notes..." rows="2"></textarea>
+                </div>
+                <button class="button add-btn" onclick="addItem()">Add Item</button>
             </div>
         </section>
+
+        <div class="frequent-section" id="frequent-section" style="display:none">
+            <h3>Frequent Items</h3>
+            <div class="frequent-items" id="frequent-items"></div>
+        </div>
 
         <div class="filter-section">
             <div class="category-filter" id="category-filter">

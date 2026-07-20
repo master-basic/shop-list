@@ -56,8 +56,8 @@ async function initializeDatabase() {
             const boughtDateStr = item.bought_date ? item.bought_date.toISOString() : null;
 
             await conn.query(
-                'INSERT INTO items (name, date, bought_date, category, price, quantity, created_by) VALUES (?, ?, ?, ?, ?, ?, ?)',
-                [item.name, dateStr, boughtDateStr, item.category, item.price, item.quantity, item.created_by]
+                'INSERT INTO items (name, date, bought_date, category, price, quantity, created_by, notes) VALUES (?, ?, ?, ?, ?, ?, ?, ?)',
+                [item.name, dateStr, boughtDateStr, item.category, item.price, item.quantity, item.created_by, null]
             );
         }
         console.log(`Inserted ${sampleItems.length} sample items`);

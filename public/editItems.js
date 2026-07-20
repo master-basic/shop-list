@@ -42,6 +42,7 @@ function enableEditing(row) {
     const itemName = row.dataset.name;
     const itemDate = row.dataset.date;
     const itemBoughtDate = row.dataset.boughtdate || '';
+    const itemNotes = row.dataset.notes || '';
     
     // Create edit modal
     showModal('Edit Item', `
@@ -80,6 +81,11 @@ function enableEditing(row) {
                 <input type="number" id="edit-quantity" name="quantity" class="form-control" min="1" required>
             </div>
             
+            <div class="form-group">
+                <label for="edit-notes">Notes:</label>
+                <textarea id="edit-notes" name="notes" class="form-control" rows="3" placeholder="Optional notes...">${itemNotes}</textarea>
+            </div>
+            
             <div class="form-actions">
                 <button type="submit" class="btn btn-primary">Save Changes</button>
                 <button type="button" class="btn btn-secondary" onclick="closeModal()">Cancel</button>
@@ -100,6 +106,7 @@ async function saveFromForm() {
         date: formData.get('date'),
         bought_date: formData.get('bought_date') || null,
         category: formData.get('category') || '',
+        notes: formData.get('notes') || null,
         price: parseFloat(formData.get('price')),
         quantity: parseInt(formData.get('quantity'))
     };

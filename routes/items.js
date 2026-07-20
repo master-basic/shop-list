@@ -22,6 +22,16 @@ router.get('/', async (req, res) => {
     }
 });
 
+router.get('/frequent', async (req, res) => {
+    try {
+        const items = await db.getFrequentItems(10);
+        res.json(items);
+    } catch (error) {
+        console.error('Error fetching frequent items:', error);
+        res.status(500).json({ error: 'Internal server error' });
+    }
+});
+
 router.get('/export/csv', async (req, res) => {
     try {
         const includeArchived = req.query.includeArchived === 'true';
@@ -43,7 +53,7 @@ router.get('/export/csv', async (req, res) => {
 
 router.post('/', requireAuth, validate(itemSchema), async (req, res) => {
     try {
-        const { name, price, quantity, category } = req.body;
+        const { name, price, quantity, category, notes } = req.body;
 
         const newItem = {
             name: name,
@@ -52,6 +62,7 @@ router.post('/', requireAuth, validate(itemSchema), async (req, res) => {
             category: category || null,
             price: price || 0.00,
             quantity: quantity || 1,
+            notes: notes || null,
             created_by: req.username
         };
 
@@ -110,7 +121,8 @@ router.put('/:id', requireAuth, validate(updateItemSchema), async (req, res) => 
             bought_date: req.body.bought_date !== undefined ? req.body.bought_date : currentItem.bought_date,
             category: req.body.category !== undefined ? req.body.category : currentItem.category,
             price: req.body.price !== undefined ? req.body.price : parseFloat(currentItem.price),
-            quantity: req.body.quantity !== undefined ? req.body.quantity : parseInt(currentItem.quantity)
+            quantity: req.body.quantity !== undefined ? req.body.quantity : parseInt(currentItem.quantity),
+            notes: req.body.notes !== undefined ? req.body.notes : currentItem.notes
         };
 
         await db.updateItem(updatedItem);

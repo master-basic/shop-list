@@ -31,9 +31,15 @@ async function createTable() {
                 created_by VARCHAR(255),
                 bought_by VARCHAR(255) DEFAULT NULL,
                 archived BOOLEAN DEFAULT FALSE,
+                notes TEXT DEFAULT NULL,
                 PRIMARY KEY (id)
             ) ENGINE=InnoDB
         `);
+
+        // Add notes column if missing (for existing databases)
+        try {
+            await conn.query(`ALTER TABLE items ADD COLUMN notes TEXT DEFAULT NULL`);
+        } catch (_) { /* column already exists */ }
 
         await conn.query(`CREATE TABLE IF NOT EXISTS users (
             username VARCHAR(255) PRIMARY KEY,
@@ -70,9 +76,15 @@ async function initializeDatabase() {
                 created_by VARCHAR(255),
                 bought_by VARCHAR(255) DEFAULT NULL,
                 archived BOOLEAN DEFAULT FALSE,
+                notes TEXT DEFAULT NULL,
                 PRIMARY KEY (id)
             ) ENGINE=InnoDB
         `);
+
+        // Add notes column if missing (for existing databases)
+        try {
+            await conn.query(`ALTER TABLE items ADD COLUMN notes TEXT DEFAULT NULL`);
+        } catch (_) { /* column already exists */ }
 
         await conn.query(`CREATE TABLE IF NOT EXISTS users (
             username VARCHAR(255) PRIMARY KEY,
@@ -114,8 +126,8 @@ async function getItems(includeArchived) {
     try {
         conn = await pool.getConnection();
         const query = includeArchived ?
-          "SELECT id, name, date, bought_date, category, price, quantity, bought_by, created_by, archived FROM items" :
-          "SELECT id, name, date, bought_date, category, price, quantity, bought_by, created_by, archived FROM items WHERE archived = 0";
+          "SELECT id, name, date, bought_date, category, price, quantity, bought_by, created_by, archived, notes FROM items" :
+          "SELECT id, name, date, bought_date, category, price, quantity, bought_by, created_by, archived, notes FROM items WHERE archived = 0";
         const rows = await conn.query(query);
         return rows;
     } finally {
@@ -129,7 +141,7 @@ async function getFilteredItems(startDate, endDate, category, includeArchived) {
     try {
         conn = await pool.getConnection();
 
-        let query = "SELECT id, name, date, bought_date, category, price, quantity, bought_by, created_by, archived FROM items";
+        let query = "SELECT id, name, date, bought_date, category, price, quantity, bought_by, created_by, archived, notes FROM items";
         const params = [];
         const conditions = [];
 
@@ -170,8 +182,8 @@ async function addItem(item) {
         conn = await pool.getConnection();
 
         const result = await conn.query(
-            'INSERT INTO items (name, date, bought_date, category, price, quantity, created_by) VALUES (?, ?, ?, ?, ?, ?, ?)',
-            [item.name, item.date, item.bought_date, item.category, item.price, item.quantity, item.created_by]
+            'INSERT INTO items (name, date, bought_date, category, price, quantity, created_by, notes) VALUES (?, ?, ?, ?, ?, ?, ?, ?)',
+            [item.name, item.date, item.bought_date, item.category, item.price, item.quantity, item.created_by, item.notes || null]
         );
 
         if (!result || !result.insertId) {
@@ -394,7 +406,7 @@ async function updateItem(item) {
         conn = await pool.getConnection();
         const query = `
             UPDATE items
-            SET name = ?, date = ?, bought_date = ?, category = ?, price = ?, quantity = ?
+            SET name = ?, date = ?, bought_date = ?, category = ?, price = ?, quantity = ?, notes = ?
             WHERE id = ?
         `;
         await conn.query(query, [
@@ -404,11 +416,30 @@ async function updateItem(item) {
             item.category,
             item.price,
             item.quantity,
+            item.notes || null,
             item.id
         ]);
     } catch (error) {
         console.error('Error updating item:', error);
         throw error;
+    } finally {
+        if (conn) conn.release();
+    }
+}
+
+// Get top N most frequently added items
+async function getFrequentItems(limit = 10) {
+    let conn;
+    try {
+        conn = await pool.getConnection();
+        const rows = await conn.query(`
+            SELECT name, category, price, COUNT(*) AS freq
+            FROM items
+            GROUP BY name, category
+            ORDER BY freq DESC, name ASC
+            LIMIT ?
+        `, [limit]);
+        return rows;
     } finally {
         if (conn) conn.release();
     }
@@ -444,5 +475,6 @@ module.exports = {
     getUsers,
     getUserByUsername,
     updateItem,
-    getItemById
+    getItemById,
+    getFrequentItems
 };

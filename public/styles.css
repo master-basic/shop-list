@@ -194,12 +194,45 @@ body {
   gap: 6px;
 }
 
+.note-indicator {
+  cursor: help;
+  font-size: 12px;
+  opacity: 0.7;
+  margin-left: 4px;
+}
+
+.add-btn {
+  align-self: end;
+}
+
 .input-group label {
   font-size: 12px;
   font-weight: 600;
   color: var(--text-secondary);
   text-transform: uppercase;
   letter-spacing: 0.4px;
+}
+
+.input-group textarea {
+  padding: 10px 14px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  font-size: 14px;
+  background: var(--bg-input);
+  color: var(--text-primary);
+  transition: border-color 0.2s, box-shadow 0.2s;
+  resize: vertical;
+  font-family: inherit;
+}
+
+.input-group textarea:focus {
+  outline: none;
+  border-color: var(--primary);
+  box-shadow: 0 0 0 3px var(--primary-dim);
+}
+
+.notes-group {
+  grid-column: 1 / -1;
 }
 
 .input-group input,
@@ -268,6 +301,57 @@ body {
   background: var(--primary);
   color: #07070d;
   border-color: var(--primary);
+}
+
+/* ===== FREQUENT ITEMS ===== */
+.frequent-section {
+  background: var(--bg-surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  padding: 16px 20px;
+  margin-bottom: 16px;
+}
+
+.frequent-section h3 {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-secondary);
+  text-transform: uppercase;
+  letter-spacing: 0.4px;
+  margin-bottom: 10px;
+}
+
+.frequent-items {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.frequent-chip {
+  padding: 5px 12px;
+  background: var(--bg-elevated);
+  border: 1px solid var(--border);
+  border-radius: 20px;
+  font-size: 13px;
+  cursor: pointer;
+  transition: all 0.2s;
+  color: var(--text-primary);
+}
+
+.frequent-chip:hover {
+  border-color: var(--primary);
+  color: var(--primary);
+  background: var(--primary-dim);
+}
+
+.frequent-chip small {
+  color: var(--text-muted);
+  font-size: 11px;
+  margin-left: 2px;
+}
+
+.frequent-chip:hover small {
+  color: var(--primary);
 }
 
 /* ===== FILTER SECTION ===== */

@@ -8,6 +8,7 @@ const itemSchema = Joi.object({
     price: Joi.number().min(0).max(999999.99).precision(2).allow(null, '').default(0.00),
     quantity: Joi.number().integer().min(1).max(999999).allow(null, '').default(1),
     category: Joi.string().trim().max(100).allow(null, '').default(null),
+    notes: Joi.string().trim().max(1000).allow(null, '').default(null),
     date: Joi.string().allow(null, ''),
     bought_date: Joi.string().allow(null, '')
 });
@@ -17,6 +18,7 @@ const updateItemSchema = Joi.object({
     price: Joi.number().min(0).max(999999.99).precision(2).allow(null, ''),
     quantity: Joi.number().integer().min(1).max(999999).allow(null, ''),
     category: Joi.string().trim().max(100).allow(null, ''),
+    notes: Joi.string().trim().max(1000).allow(null, ''),
     date: Joi.string().allow(null, ''),
     bought_date: Joi.string().allow(null, '')
 }).min(1).messages({ 'object.min': 'At least one field must be provided for update' });
