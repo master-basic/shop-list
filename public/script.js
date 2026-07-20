@@ -90,6 +90,10 @@ async function fetchItems() {
         document.getElementById('total-amount').textContent = `AZN ${totalAmount.toFixed(2)}`;
         document.getElementById('total-items').textContent = totalItems;
         document.getElementById('purchased-count').textContent = purchasedCount;
+
+        if (list.children.length === 0) {
+            list.innerHTML = '<tr><td colspan="9" class="empty-state">No items found</td></tr>';
+        }
     } catch (error) {
         console.error('Error fetching items:', error);
         showToast('Failed to load items. Please refresh the page.', 'error');
@@ -550,9 +554,6 @@ function initCategoryFilter() {
         });
     });
 }
-
-// Initialize theme
-initTheme();
 
 // Fetch and display the items when the page loads
 fetchItems();

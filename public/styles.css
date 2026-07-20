@@ -264,6 +264,12 @@ body {
   box-shadow: none;
 }
 
+.filter-buttons .button.active {
+  background: var(--primary);
+  color: #07070d;
+  border-color: var(--primary);
+}
+
 /* ===== FILTER SECTION ===== */
 .filter-section {
   display: flex;
@@ -514,6 +520,13 @@ tbody tr:last-child td {
   font-size: 48px;
   margin-bottom: 12px;
   opacity: 0.4;
+}
+
+tr .empty-state {
+  text-align: center;
+  padding: 48px 20px;
+  color: var(--text-muted);
+  font-size: 14px;
 }
 
 .no-data {

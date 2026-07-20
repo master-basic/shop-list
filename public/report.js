@@ -1,13 +1,6 @@
-// Report page functionality (Browser-compatible)
+// Report page functionality
 
 let currentUser = null;
-
-// Initialize theme
-async function initTheme() {
-    if (typeof darkMode !== 'undefined') {
-        await darkMode.init();
-    }
-}
 
 // Initialize the page
 async function init() {
